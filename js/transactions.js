@@ -114,14 +114,14 @@ const Transactions = (() => {
         // Validations
         if (tipo !== 'retorno') {
             if (!solicitante) {
-                errorEl.textContent = '⚠️ Ingrese quién solicita el equipo (Docente/Jefe).';
+                errorEl.textContent = 'Ingrese quién solicita el equipo (Docente/Jefe).';
                 return;
             }
         }
 
         const selected = Cart.getSelectedSlots();
         if (selected.length === 0) {
-            errorEl.textContent = '⚠️ No hay laptops seleccionadas.';
+            errorEl.textContent = 'No hay laptops seleccionadas.';
             return;
         }
 

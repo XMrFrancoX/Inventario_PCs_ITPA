@@ -35,7 +35,7 @@ const Auth = (() => {
                     const roleLabel = DataStore.ROLES[invite.role]?.label || invite.role;
                     const infoEl = document.getElementById('registerInviteInfo');
                     if (infoEl) {
-                        infoEl.textContent = `🎟️ Invitación válida — Se le asignará el rol: ${roleLabel}`;
+                        infoEl.textContent = `Invitación válida — Se le asignará el rol: ${roleLabel}`;
                         infoEl.style.display = '';
                     }
                 }, 100);
@@ -129,7 +129,7 @@ const Auth = (() => {
         const result = DataStore.registerUser(username, password, fullName, assignedRole);
         if (result.success) {
             const roleLabel = DataStore.ROLES[result.user.role]?.label || result.user.role;
-            successEl.textContent = `✅ Cuenta creada exitosamente. Su rol es "${roleLabel}".${!assignedRole ? ' Un administrador puede asignarle más permisos.' : ''}`;
+            successEl.textContent = `Cuenta creada exitosamente. Su rol es "${roleLabel}".${!assignedRole ? ' Un administrador puede asignarle más permisos.' : ''}`;
             document.getElementById('regUser').value = '';
             document.getElementById('regPass').value = '';
             document.getElementById('regPassConfirm').value = '';

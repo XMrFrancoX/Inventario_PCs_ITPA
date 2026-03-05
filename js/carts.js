@@ -82,13 +82,13 @@ const CartManager = (() => {
 
         const result = DataStore.createCart(name, shelves, slots, Auth.getUser());
         if (result.success) {
-            msgEl.textContent = `✅ Carro "${name}" creado correctamente.`;
+            msgEl.textContent = `Carro "${name}" creado correctamente.`;
             msgEl.style.color = 'var(--status-green)';
             document.getElementById('newCartName').value = '';
             render();
             updateCartSelector();
         } else {
-            msgEl.textContent = `⚠️ ${result.error}`;
+            msgEl.textContent = `${result.error}`;
             msgEl.style.color = 'var(--status-yellow)';
         }
     }

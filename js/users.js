@@ -1,5 +1,5 @@
 /**
- * users.js — Panel de administración de usuarios e invitaciones (solo admins)
+ * users.js — Panel de administración de usuarios (solo admins)
  */
 const UserManager = (() => {
 
@@ -115,7 +115,7 @@ const UserManager = (() => {
 
         const result = DataStore.updateUser(original, fields, Auth.getUser());
         if (result.success) {
-            successEl.textContent = '✅ Usuario actualizado correctamente.';
+            successEl.textContent = 'Usuario actualizado correctamente.';
             Auth.refreshSession();
             render();
             const current = Auth.getUser();
@@ -148,107 +148,7 @@ const UserManager = (() => {
         }
     }
 
-    /* =================== INVITACIONES =================== */
-
-    /** Renderizar la tabla de invitaciones activas */
-    function renderInvites() {
-        const container = document.getElementById('invitesTableBody');
-        if (!container) return;
-
-        const invites = DataStore.getInvites();
-        const activeInvites = invites.filter(i => !i.used);
-
-        if (activeInvites.length === 0) {
-            container.innerHTML = `
-                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:24px; font-size:.85rem;">
-                    No hay invitaciones activas.
-                </td></tr>
-            `;
-            return;
-        }
-
-        container.innerHTML = activeInvites.map(invite => {
-            const roleLabel = DataStore.ROLES[invite.role]?.label || invite.role;
-            const dateStr = new Date(invite.createdAt).toLocaleDateString('es-AR');
-            const link = `${window.location.origin}${window.location.pathname}?invite=${invite.token}`;
-
-            return `
-                <tr class="users-table__row">
-                    <td class="users-table__cell">
-                        <span class="status-badge status-badge--${invite.role === 'admin' ? 'staff' : invite.role === 'editor' ? 'enuso' : 'almacenada'}">${esc(roleLabel)}</span>
-                    </td>
-                    <td class="users-table__cell">
-                        <div class="invite-link-cell">
-                            <input class="form-input invite-link-input" value="${esc(link)}" readonly style="font-size:.72rem;padding:6px 8px;">
-                            <button class="btn btn--secondary btn--sm" onclick="UserManager.copyInviteLink('${esc(invite.token)}')" title="Copiar">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </td>
-                    <td class="users-table__cell" style="font-size:.75rem;color:var(--text-muted);">
-                        ${dateStr}
-                    </td>
-                    <td class="users-table__cell">
-                        <button class="btn btn--danger btn--sm" onclick="UserManager.handleDeleteInvite('${esc(invite.token)}')" title="Eliminar">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                                <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                            </svg>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    /** Generar una nueva invitación */
-    function handleGenerateInvite() {
-        const roleSelect = document.getElementById('inviteRoleSelect');
-        const msgEl = document.getElementById('inviteMsg');
-
-        if (!roleSelect) return;
-        const role = roleSelect.value;
-
-        const result = DataStore.createInvite(role, Auth.getUser());
-        if (result.success) {
-            msgEl.textContent = '✅ Invitación creada. Copie el link de la tabla.';
-            msgEl.style.color = 'var(--status-green)';
-            renderInvites();
-        } else {
-            msgEl.textContent = `⚠️ ${result.error}`;
-            msgEl.style.color = 'var(--status-yellow)';
-        }
-    }
-
-    /** Eliminar una invitación */
-    function handleDeleteInvite(token) {
-        if (!confirm('¿Eliminar esta invitación? El link dejará de funcionar.')) return;
-        const result = DataStore.deleteInvite(token, Auth.getUser());
-        if (result.success) {
-            renderInvites();
-        } else {
-            alert(result.error);
-        }
-    }
-
-    /** Copiar link al portapapeles */
-    function copyInviteLink(token) {
-        const link = `${window.location.origin}${window.location.pathname}?invite=${token}`;
-        navigator.clipboard.writeText(link).then(() => {
-            const msgEl = document.getElementById('inviteMsg');
-            if (msgEl) {
-                msgEl.textContent = '📋 Link copiado al portapapeles.';
-                msgEl.style.color = 'var(--accent)';
-                setTimeout(() => { msgEl.textContent = ''; }, 2000);
-            }
-        }).catch(() => {
-            prompt('Copie este link:', link);
-        });
-    }
-
     function esc(val) { return (val || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
-    return { init, render, renderInvites, editUser, saveUserEdit, closeEditModal, deleteUser, handleGenerateInvite, handleDeleteInvite, copyInviteLink };
+    return { init, render, editUser, saveUserEdit, closeEditModal, deleteUser };
 })();

@@ -24,12 +24,12 @@ const Bulk = (() => {
         const msgEl = document.getElementById('hybridMsg');
 
         if (!prefix) {
-            msgEl.textContent = '⚠️ Ingrese un prefijo (ej: D, L, V, H)';
+            msgEl.textContent = 'Ingrese un prefijo (ej: D, L, V, H)';
             msgEl.style.color = 'var(--status-yellow)';
             return;
         }
         if (isNaN(startSlot) || isNaN(endSlot) || startSlot < 0 || endSlot > 19 || startSlot > endSlot) {
-            msgEl.textContent = '⚠️ Rango de ranuras inválido (1-20)';
+            msgEl.textContent = 'Rango de ranuras inválido (1-20)';
             msgEl.style.color = 'var(--status-yellow)';
             return;
         }
@@ -39,7 +39,7 @@ const Bulk = (() => {
         Summary.update();
 
         const count = endSlot - startSlot + 1;
-        msgEl.textContent = `✅ Se asignaron ${count} laptops (${prefix}${String(startNum).padStart(2, '0')} — ${prefix}${String(startNum + count - 1).padStart(2, '0')}) al estante ${shelf === 'superior' ? 'Superior' : 'Inferior'}.`;
+        msgEl.textContent = `Se asignaron ${count} laptops (${prefix}${String(startNum).padStart(2, '0')} — ${prefix}${String(startNum + count - 1).padStart(2, '0')}) al estante ${shelf === 'superior' ? 'Superior' : 'Inferior'}.`;
         msgEl.style.color = 'var(--status-green)';
     }
 

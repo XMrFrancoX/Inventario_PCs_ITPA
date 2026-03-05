@@ -16,6 +16,9 @@ const App = (() => {
         setupNavigation();
         registerSW();
 
+        // Render Lucide icons
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
         const menuBtn = document.getElementById('menuBtn');
         if (menuBtn) {
             menuBtn.style.display = Auth.isLoggedIn() ? '' : 'none';
@@ -63,7 +66,7 @@ const App = (() => {
 
                 if (target === 'cartSection') { Cart.render(); CartManager.updateCartSelector(); }
                 if (target === 'summarySection') Summary.update();
-                if (target === 'usersSection') { UserManager.render(); UserManager.renderInvites(); }
+                if (target === 'usersSection') { UserManager.render(); }
                 if (target === 'historySection') Transactions.renderHistory();
                 if (target === 'cartsSection') CartManager.render();
             });
