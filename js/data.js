@@ -345,6 +345,7 @@ const DataStore = (() => {
             name: c.name,
             shelves: c.shelves,
             slotsPerShelf: c.slots_per_shelf,
+            macAddress: c.mac_address || '',
             createdAt: c.created_at
         }));
     }
@@ -392,6 +393,29 @@ const DataStore = (() => {
         if (slotsError) console.error('Error creating slots:', slotsError);
 
         return { success: true, cart: newCart };
+    }
+
+    /** Actualizar un carro existente */
+    async function updateCart(cartId, name, macAddress, requestingUser) {
+        if (!hasPermission(requestingUser, 'admin')) {
+            return { success: false, error: 'No tiene permisos.' };
+        }
+        if (!name || !name.trim()) {
+            return { success: false, error: 'El nombre del carro es obligatorio.' };
+        }
+
+        const updates = {
+            name: name.trim(),
+            mac_address: (macAddress || '').trim()
+        };
+
+        const { error } = await db
+            .from('carts')
+            .update(updates)
+            .eq('id', cartId);
+
+        if (error) return { success: false, error: error.message };
+        return { success: true };
     }
 
     /** Eliminar un carro */
@@ -489,6 +513,12 @@ const DataStore = (() => {
         registerUser, updateUserRole, updateUser, deleteUser,
         getUsers, hasPermission, ROLES,
         addTransaction, getTransactions, deleteTransaction,
-        getCarts, getActiveCart, setActiveCart, createCart, deleteCart, getShelfLabel
+        getCarts,
+        getActiveCart,
+        setActiveCart,
+        createCart,
+        updateCart,
+        deleteCart,
+        getShelfLabel
     };
 })();

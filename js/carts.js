@@ -17,6 +17,12 @@ const CartManager = (() => {
             e.preventDefault();
             handleCreate();
         });
+
+        // Edit cart modal
+        document.getElementById('editCartModalClose')?.addEventListener('click', closeEditModal);
+        document.getElementById('editCartModal')?.addEventListener('click', e => {
+            if (e.target.id === 'editCartModal') closeEditModal();
+        });
     }
 
     /** Renderizar la tabla de gestión de carros */
@@ -38,6 +44,7 @@ const CartManager = (() => {
                             <strong>${esc(cart.name)}</strong>
                             ${isActive ? '<span class="status-badge status-badge--almacenada" style="font-size:.65rem;">ACTIVO</span>' : ''}
                         </div>
+                        ${cart.macAddress ? `<div style="font-size:.75rem; color:var(--text-muted); margin-top:4px; font-family:monospace;">${esc(cart.macAddress)}</div>` : ''}
                     </td>
                     <td class="users-table__cell" style="font-size:.82rem;">
                         ${cart.shelves.length} estante(s) × ${cart.slotsPerShelf} ranuras
@@ -54,6 +61,12 @@ const CartManager = (() => {
                                     </svg>
                                 </button>
                             ` : ''}
+                            <button class="btn btn--secondary btn--sm" onclick="CartManager.openEditModal('${esc(cart.id)}')" title="Editar Carro">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
                             ${carts.length > 1 ? `
                                 <button class="btn btn--danger btn--sm" onclick="CartManager.handleDelete('${esc(cart.id)}')" title="Eliminar">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -139,7 +152,58 @@ const CartManager = (() => {
         }
     }
 
+    /** Abrir modal de edición */
+    async function openEditModal(cartId) {
+        const carts = await DataStore.getCarts();
+        const cart = carts.find(c => c.id === cartId);
+        if (!cart) return;
+
+        document.getElementById('editCartId').value = cart.id;
+        document.getElementById('editCartName').value = cart.name;
+        document.getElementById('editCartMac').value = cart.macAddress || '';
+        document.getElementById('editCartError').textContent = '';
+
+        document.getElementById('editCartModal').classList.add('visible');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editCartModal').classList.remove('visible');
+        document.getElementById('editCartId').value = '';
+        document.getElementById('editCartError').textContent = '';
+    }
+
+    /** Guardar edición de carro */
+    async function saveEdit() {
+        const cartId = document.getElementById('editCartId').value;
+        const name = document.getElementById('editCartName').value.trim();
+        const macAddress = document.getElementById('editCartMac').value.trim();
+        const errorEl = document.getElementById('editCartError');
+
+        if (!name) {
+            errorEl.textContent = 'El nombre es obligatorio.';
+            return;
+        }
+
+        errorEl.textContent = 'Guardando...';
+        errorEl.style.color = 'var(--text-muted)';
+
+        const result = await DataStore.updateCart(cartId, name, macAddress, Auth.getUser());
+        if (result.success) {
+            closeEditModal();
+            await render();
+            await updateCartSelector();
+
+            // If the edited cart was the active cart, we might want to re-render the cart title
+            if (cartId === DataStore.getActiveCart()) {
+                await Cart.render();
+            }
+        } else {
+            errorEl.textContent = result.error;
+            errorEl.style.color = 'var(--status-yellow)';
+        }
+    }
+
     function esc(val) { return (val || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
-    return { init, render, handleCreate, handleDelete, activate, updateCartSelector };
+    return { init, render, handleCreate, handleDelete, activate, updateCartSelector, openEditModal, closeEditModal, saveEdit };
 })();

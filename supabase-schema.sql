@@ -34,6 +34,7 @@ CREATE TABLE carts (
     name TEXT NOT NULL,
     shelves TEXT[] NOT NULL DEFAULT '{superior,inferior}',
     slots_per_shelf INTEGER NOT NULL DEFAULT 20,
+    mac_address TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
