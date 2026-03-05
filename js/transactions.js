@@ -63,6 +63,7 @@ const Transactions = (() => {
         const now = new Date();
         const timestampEl = document.getElementById('txnTimestamp');
         timestampEl.value = now.toLocaleString('es-AR', {
+            timeZone: 'America/Argentina/Buenos_Aires',
             day: '2-digit', month: '2-digit', year: 'numeric',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
@@ -113,7 +114,7 @@ const Transactions = (() => {
 
         const movInfo = MOVEMENT_TYPES[tipo];
         const now = new Date();
-        const horaStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        const horaStr = now.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' });
 
         const updates = selected.map(s => ({
             shelf: s.shelf,

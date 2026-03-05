@@ -218,7 +218,14 @@ const Modal = (() => {
       editMode = e.target.checked;
       toggleFields(editMode);
       updateFooterButtons();
+      if (editMode) {
+        attachStatusChangeListener();
+      }
     });
+
+    if (editMode) {
+      attachStatusChangeListener();
+    }
 
     updateFooterButtons();
   }
@@ -248,6 +255,41 @@ const Modal = (() => {
     });
   }
 
+  /** Auto-fill hora and entregadoPor when status changes, clear assignment on almacenada/vacio */
+  function attachStatusChangeListener() {
+    const statusEl = document.getElementById('fld_status');
+    if (!statusEl) return;
+    statusEl.addEventListener('change', () => {
+      const newStatus = statusEl.value;
+      const horaEl = document.getElementById('fld_hora');
+      const entregadoEl = document.getElementById('fld_entregadoPor');
+      const responsableEl = document.getElementById('fld_responsable');
+      const cursoEl = document.getElementById('fld_curso');
+      const ubicacionEl = document.getElementById('fld_ubicacion');
+
+      if (newStatus === 'almacenada' || newStatus === 'vacio') {
+        // Clear all assignment fields
+        if (responsableEl) responsableEl.value = '';
+        if (cursoEl) cursoEl.value = '';
+        if (horaEl) horaEl.value = '';
+        if (entregadoEl) entregadoEl.value = '';
+        if (ubicacionEl) ubicacionEl.value = '';
+      } else {
+        // Auto-fill hora and entregadoPor for enuso/staff/excepcion
+        const now = new Date();
+        const horaArg = now.toLocaleTimeString('es-AR', {
+          timeZone: 'America/Argentina/Buenos_Aires',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        if (horaEl) horaEl.value = horaArg;
+        const user = Auth.getUser();
+        if (entregadoEl && user) entregadoEl.value = user.fullName;
+      }
+    });
+  }
+
   function updateFooterButtons() {
     const footer = document.getElementById('modalFooter');
     if (editMode) {
@@ -274,6 +316,9 @@ const Modal = (() => {
 
   async function saveSlot() {
     if (!currentSlot) return;
+
+    // Get the old slot data to detect status change
+    const oldSlot = await DataStore.getSlot(currentSlot.shelf, currentSlot.index);
 
     const user = Auth.getUser();
     const fields = {
@@ -320,6 +365,25 @@ const Modal = (() => {
     }
 
     await DataStore.updateSlot(currentSlot.shelf, currentSlot.index, fields);
+
+    // Record transaction if status changed
+    if (oldSlot && oldSlot.status !== fields.status && fields.status !== 'vacio') {
+      const tipoMap = { almacenada: 'retorno', enuso: 'clase', staff: 'staff', excepcion: 'excepcion' };
+      const txnTipo = tipoMap[fields.status] || fields.status;
+      const laptopLabel = fields.laptopId || `R${currentSlot.index}`;
+
+      await DataStore.addTransaction({
+        tipo: txnTipo,
+        equipos: laptopLabel,
+        responsable: fields.responsable || '',
+        operador: user ? user.fullName : '',
+        curso: fields.curso || '',
+        destino: fields.ubicacion || '',
+        retirante: '',
+        observaciones: fields.observaciones || ''
+      });
+    }
+
     close();
     await Cart.render();
     await Summary.update();
