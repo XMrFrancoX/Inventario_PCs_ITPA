@@ -11,6 +11,10 @@ const App = (() => {
         Bulk.init();
         UserManager.init();
         Transactions.init();
+<<<<<<< HEAD
+=======
+        CartManager.init();
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         setupSidebar();
         setupNavigation();
         registerSW();
@@ -64,10 +68,18 @@ const App = (() => {
                 closeSidebar();
 
                 // Refresh data when switching to views
+<<<<<<< HEAD
                 if (target === 'cartSection') Cart.render();
                 if (target === 'summarySection') Summary.update();
                 if (target === 'usersSection') UserManager.render();
                 if (target === 'historySection') Transactions.renderHistory();
+=======
+                if (target === 'cartSection') { Cart.render(); CartManager.updateCartSelector(); }
+                if (target === 'summarySection') Summary.update();
+                if (target === 'usersSection') { UserManager.render(); UserManager.renderInvites(); }
+                if (target === 'historySection') Transactions.renderHistory();
+                if (target === 'cartsSection') CartManager.render();
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
             });
         });
 

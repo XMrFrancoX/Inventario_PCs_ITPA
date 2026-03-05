@@ -3,6 +3,11 @@
  */
 const Auth = (() => {
     let currentUser = null;
+<<<<<<< HEAD
+=======
+    let pendingInviteToken = null;
+    let pendingInviteRole = null;
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 
     function init() {
         const saved = sessionStorage.getItem('itpa_session');
@@ -18,6 +23,37 @@ const Auth = (() => {
                 currentUser = null;
             }
         }
+<<<<<<< HEAD
+=======
+
+        // Detectar token de invitación en la URL
+        const params = new URLSearchParams(window.location.search);
+        const inviteToken = params.get('invite');
+        if (inviteToken && !currentUser) {
+            // Verificar que el token sea válido
+            const invites = DataStore.getInvites();
+            const invite = invites.find(i => i.token === inviteToken && !i.used);
+            if (invite) {
+                pendingInviteToken = inviteToken;
+                pendingInviteRole = invite.role;
+                // Auto-mostrar formulario de registro
+                setTimeout(() => {
+                    document.getElementById('loginCard').style.display = 'none';
+                    document.getElementById('registerCard').style.display = '';
+                    // Mostrar el rol que se va a asignar
+                    const roleLabel = DataStore.ROLES[invite.role]?.label || invite.role;
+                    const infoEl = document.getElementById('inviteRoleInfo');
+                    if (infoEl) {
+                        infoEl.textContent = `🎟️ Invitación válida — Se le asignará el rol: ${roleLabel}`;
+                        infoEl.style.display = '';
+                    }
+                }, 100);
+            }
+            // Limpiar la URL sin recargar
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         setupListeners();
     }
 
@@ -91,14 +127,42 @@ const Auth = (() => {
             return;
         }
 
+<<<<<<< HEAD
         const result = DataStore.registerUser(username, password, fullName);
         if (result.success) {
             successEl.textContent = '✅ Cuenta creada exitosamente. Su rol es "Solo Lectura". Un administrador puede asignarle más permisos.';
+=======
+        // Si hay invitación pendiente, canjearla
+        let assignedRole = null;
+        if (pendingInviteToken) {
+            assignedRole = DataStore.redeemInvite(pendingInviteToken);
+            if (!assignedRole) {
+                errorEl.textContent = 'La invitación ya fue usada o es inválida.';
+                pendingInviteToken = null;
+                pendingInviteRole = null;
+                const infoEl = document.getElementById('inviteRoleInfo');
+                if (infoEl) infoEl.style.display = 'none';
+                return;
+            }
+        }
+
+        const result = DataStore.registerUser(username, password, fullName, assignedRole);
+        if (result.success) {
+            const roleLabel = DataStore.ROLES[result.user.role]?.label || result.user.role;
+            successEl.textContent = `✅ Cuenta creada exitosamente. Su rol es "${roleLabel}".${!assignedRole ? ' Un administrador puede asignarle más permisos.' : ''}`;
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
             // Clear fields
             document.getElementById('regUser').value = '';
             document.getElementById('regPass').value = '';
             document.getElementById('regPassConfirm').value = '';
             document.getElementById('regFullName').value = '';
+<<<<<<< HEAD
+=======
+            pendingInviteToken = null;
+            pendingInviteRole = null;
+            const infoEl = document.getElementById('inviteRoleInfo');
+            if (infoEl) infoEl.style.display = 'none';
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 
             // Auto-switch to login after 3s
             setTimeout(() => {
@@ -151,6 +215,10 @@ const Auth = (() => {
         // Initialize all modules
         Cart.render();
         Summary.update();
+<<<<<<< HEAD
+=======
+        CartManager.updateCartSelector();
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
     }
 
     /** Oculta/muestra elementos de la UI según el rol del usuario */

@@ -12,6 +12,12 @@ const DataStore = (() => {
     const STORAGE_KEY = 'itpa_inventory';
     const USERS_KEY = 'itpa_users';
     const TRANSACTIONS_KEY = 'itpa_transactions';
+<<<<<<< HEAD
+=======
+    const INVITES_KEY = 'itpa_invites';
+    const CARTS_KEY = 'itpa_carts';
+    const ACTIVE_CART_KEY = 'itpa_active_cart';
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 
     /* ---------- Roles disponibles ---------- */
     const ROLES = {
@@ -87,21 +93,74 @@ const DataStore = (() => {
                 saveUsers(users);
             }
         }
+<<<<<<< HEAD
         if (!localStorage.getItem(STORAGE_KEY)) {
             const slots = [];
             for (let i = 0; i < 20; i++) slots.push(emptySlot(i, 'superior'));
             for (let i = 0; i < 20; i++) slots.push(emptySlot(i, 'inferior'));
             save(slots);
+=======
+
+        // Migrar de sistema de carro único a multi-carro
+        if (!localStorage.getItem(CARTS_KEY)) {
+            const defaultId = 'cart_' + Date.now();
+            const defaultCart = {
+                id: defaultId,
+                name: 'Carro Principal',
+                shelves: ['superior', 'inferior'],
+                slotsPerShelf: 20,
+                createdAt: new Date().toISOString()
+            };
+            localStorage.setItem(CARTS_KEY, JSON.stringify([defaultCart]));
+            localStorage.setItem(ACTIVE_CART_KEY, defaultId);
+
+            // Migrar datos existentes o crear vacíos
+            const existingData = localStorage.getItem(STORAGE_KEY);
+            if (existingData) {
+                localStorage.setItem('itpa_inventory_' + defaultId, existingData);
+            } else {
+                const slots = [];
+                for (let i = 0; i < 20; i++) slots.push(emptySlot(i, 'superior'));
+                for (let i = 0; i < 20; i++) slots.push(emptySlot(i, 'inferior'));
+                localStorage.setItem('itpa_inventory_' + defaultId, JSON.stringify(slots));
+            }
+        }
+
+        // Asegurar carro activo válido
+        const carts = getCarts();
+        const activeId = localStorage.getItem(ACTIVE_CART_KEY);
+        if (!activeId || !carts.some(c => c.id === activeId)) {
+            if (carts.length > 0) localStorage.setItem(ACTIVE_CART_KEY, carts[0].id);
+        }
+
+        // Inicializar invitaciones si no existen
+        if (!localStorage.getItem(INVITES_KEY)) {
+            localStorage.setItem(INVITES_KEY, JSON.stringify([]));
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         }
     }
 
     /* =================== INVENTARIO CRUD =================== */
+<<<<<<< HEAD
     function getAll() {
         return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     }
 
     function save(slots) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(slots));
+=======
+    function _cartStorageKey() {
+        const activeId = localStorage.getItem(ACTIVE_CART_KEY);
+        return activeId ? 'itpa_inventory_' + activeId : STORAGE_KEY;
+    }
+
+    function getAll() {
+        return JSON.parse(localStorage.getItem(_cartStorageKey()) || '[]');
+    }
+
+    function save(slots) {
+        localStorage.setItem(_cartStorageKey(), JSON.stringify(slots));
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         window.dispatchEvent(new CustomEvent('data-updated'));
     }
 
@@ -172,8 +231,13 @@ const DataStore = (() => {
         return users.find(u => u.username === username && u.password === password) || null;
     }
 
+<<<<<<< HEAD
     /** Registrar nuevo usuario (rol viewer por defecto) */
     function registerUser(username, password, fullName) {
+=======
+    /** Registrar nuevo usuario (rol viewer por defecto, o rol de invitación) */
+    function registerUser(username, password, fullName, role) {
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         const users = getUsers();
         // Verificar si ya existe
         if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
@@ -189,11 +253,20 @@ const DataStore = (() => {
             return { success: false, error: 'Debe ingresar su nombre completo.' };
         }
 
+<<<<<<< HEAD
+=======
+        const assignedRole = (role && ROLES[role]) ? role : 'viewer';
+
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         const newUser = {
             username: username.trim(),
             password: password,
             fullName: fullName.trim(),
+<<<<<<< HEAD
             role: 'viewer',           // Nivel más bajo por defecto
+=======
+            role: assignedRole,
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
             isMaster: false,
             createdAt: new Date().toISOString()
         };
@@ -307,12 +380,171 @@ const DataStore = (() => {
         return JSON.parse(localStorage.getItem(TRANSACTIONS_KEY) || '[]');
     }
 
+<<<<<<< HEAD
+=======
+    /* =================== INVITACIONES =================== */
+    function getInvites() {
+        return JSON.parse(localStorage.getItem(INVITES_KEY) || '[]');
+    }
+
+    function saveInvites(invites) {
+        localStorage.setItem(INVITES_KEY, JSON.stringify(invites));
+    }
+
+    /** Crear una invitación con rol preseleccionado (solo admins) */
+    function createInvite(role, requestingUser) {
+        if (!requestingUser || requestingUser.role !== 'admin') {
+            return { success: false, error: 'Solo los administradores pueden crear invitaciones.' };
+        }
+        if (!ROLES[role]) {
+            return { success: false, error: 'Rol inválido.' };
+        }
+        const token = Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
+        const invite = {
+            token,
+            role,
+            createdAt: new Date().toISOString(),
+            createdBy: requestingUser.username,
+            used: false
+        };
+        const invites = getInvites();
+        invites.push(invite);
+        saveInvites(invites);
+        return { success: true, invite };
+    }
+
+    /** Canjear una invitación por su token */
+    function redeemInvite(token) {
+        const invites = getInvites();
+        const invite = invites.find(i => i.token === token && !i.used);
+        if (!invite) return null;
+        invite.used = true;
+        invite.usedAt = new Date().toISOString();
+        saveInvites(invites);
+        return invite.role;
+    }
+
+    /** Eliminar una invitación */
+    function deleteInvite(token, requestingUser) {
+        if (!requestingUser || requestingUser.role !== 'admin') {
+            return { success: false, error: 'Solo los administradores pueden eliminar invitaciones.' };
+        }
+        const invites = getInvites().filter(i => i.token !== token);
+        saveInvites(invites);
+        return { success: true };
+    }
+
+    /* =================== GESTIÓN DE CARROS =================== */
+    function getCarts() {
+        return JSON.parse(localStorage.getItem(CARTS_KEY) || '[]');
+    }
+
+    function saveCarts(carts) {
+        localStorage.setItem(CARTS_KEY, JSON.stringify(carts));
+    }
+
+    function getActiveCart() {
+        const activeId = localStorage.getItem(ACTIVE_CART_KEY);
+        const carts = getCarts();
+        return carts.find(c => c.id === activeId) || carts[0] || null;
+    }
+
+    function setActiveCart(cartId) {
+        localStorage.setItem(ACTIVE_CART_KEY, cartId);
+        window.dispatchEvent(new CustomEvent('data-updated'));
+    }
+
+    /** Crear un nuevo carro */
+    function createCart(name, shelvesCount, slotsPerShelf, requestingUser) {
+        if (!requestingUser || requestingUser.role !== 'admin') {
+            return { success: false, error: 'Solo los administradores pueden crear carros.' };
+        }
+        if (!name || !name.trim()) {
+            return { success: false, error: 'El carro debe tener un nombre.' };
+        }
+        const numShelves = shelvesCount || 2;
+        const numSlots = slotsPerShelf || 20;
+        const shelfNames = [];
+        if (numShelves === 1) {
+            shelfNames.push('unico');
+        } else if (numShelves === 2) {
+            shelfNames.push('superior', 'inferior');
+        } else {
+            for (let i = 1; i <= numShelves; i++) shelfNames.push('estante_' + i);
+        }
+
+        const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+        const cart = {
+            id,
+            name: name.trim(),
+            shelves: shelfNames,
+            slotsPerShelf: numSlots,
+            createdAt: new Date().toISOString()
+        };
+
+        // Crear slots vacíos
+        const slots = [];
+        shelfNames.forEach(shelf => {
+            for (let i = 0; i < numSlots; i++) slots.push(emptySlot(i, shelf));
+        });
+        localStorage.setItem('itpa_inventory_' + id, JSON.stringify(slots));
+
+        const carts = getCarts();
+        carts.push(cart);
+        saveCarts(carts);
+        return { success: true, cart };
+    }
+
+    /** Eliminar un carro (solo admin, no el último) */
+    function deleteCart(cartId, requestingUser) {
+        if (!requestingUser || requestingUser.role !== 'admin') {
+            return { success: false, error: 'Solo los administradores pueden eliminar carros.' };
+        }
+        const carts = getCarts();
+        if (carts.length <= 1) {
+            return { success: false, error: 'No se puede eliminar el último carro.' };
+        }
+        const filtered = carts.filter(c => c.id !== cartId);
+        saveCarts(filtered);
+        localStorage.removeItem('itpa_inventory_' + cartId);
+
+        // Si el carro eliminado era el activo, cambiar al primero
+        const activeId = localStorage.getItem(ACTIVE_CART_KEY);
+        if (activeId === cartId) {
+            localStorage.setItem(ACTIVE_CART_KEY, filtered[0].id);
+        }
+
+        window.dispatchEvent(new CustomEvent('data-updated'));
+        return { success: true };
+    }
+
+    function getShelfLabel(shelfKey) {
+        const labels = {
+            superior: 'Superior',
+            inferior: 'Inferior',
+            unico: 'Único'
+        };
+        if (labels[shelfKey]) return labels[shelfKey];
+        // estante_1 → "Estante 1"
+        if (shelfKey.startsWith('estante_')) return 'Estante ' + shelfKey.split('_')[1];
+        return shelfKey;
+    }
+
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
     /* ---------- Exportar ---------- */
     return {
         init, getAll, getSlot, updateSlot, bulkUpdate, getStats,
         authenticate, assignRange, save,
         registerUser, updateUserRole, updateUser, deleteUser,
         getUsers, hasPermission, ROLES,
+<<<<<<< HEAD
         addTransaction, getTransactions
+=======
+        addTransaction, getTransactions,
+        // Invitaciones
+        createInvite, getInvites, redeemInvite, deleteInvite,
+        // Carros
+        getCarts, getActiveCart, setActiveCart, createCart, deleteCart, getShelfLabel
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
     };
 })();

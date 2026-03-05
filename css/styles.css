@@ -1323,4 +1323,28 @@ textarea.form-input {
 .mass-delivery-bar__actions {
   display: flex;
   gap: 10px;
+<<<<<<< HEAD
+=======
+}
+
+/* =================== INVITE LINK =================== */
+.invite-link-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.invite-link-cell .invite-link-input {
+  flex: 1;
+  min-width: 0;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: text;
+}
+
+/* =================== FORM ROW 3-COL =================== */
+@media (min-width: 768px) {
+  .form-row:has(> :nth-child(3)) {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 }

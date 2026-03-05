@@ -25,17 +25,30 @@ const Cart = (() => {
         if (!container) return;
 
         const slots = DataStore.getAll();
+<<<<<<< HEAD
         const shelves = ['superior', 'inferior'];
 
         container.innerHTML = shelves.map(shelf => {
             const shelfSlots = slots.filter(s => s.shelf === shelf).sort((a, b) => a.slotIndex - b.slotIndex);
+=======
+        const activeCart = DataStore.getActiveCart();
+        const shelves = activeCart ? activeCart.shelves : ['superior', 'inferior'];
+
+        container.innerHTML = shelves.map(shelf => {
+            const shelfSlots = slots.filter(s => s.shelf === shelf).sort((a, b) => a.slotIndex - b.slotIndex);
+            const shelfLabel = DataStore.getShelfLabel(shelf);
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
             return `
         <div class="cart-shelf">
           <div class="cart-shelf__label">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/>
             </svg>
+<<<<<<< HEAD
             Estante ${shelf === 'superior' ? 'Superior' : 'Inferior'}
+=======
+            Estante ${shelfLabel}
+>>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
           </div>
           <div class="cart-shelf__grid">
             ${shelfSlots.map(slot => renderSlot(slot)).join('')}
