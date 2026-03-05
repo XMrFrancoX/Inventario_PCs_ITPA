@@ -1,46 +1,24 @@
 /**
  * auth.js — Sistema de login, registro, y gestión de sesión con roles
+ * Usa Supabase para autenticación
  */
 const Auth = (() => {
     let currentUser = null;
-    let pendingInviteToken = null;
-    let pendingInviteRole = null;
 
-    function init() {
+    async function init() {
         const saved = sessionStorage.getItem('itpa_session');
         if (saved) {
-            currentUser = JSON.parse(saved);
-            const fresh = DataStore.authenticate(currentUser.username, currentUser.password);
+            const parsed = JSON.parse(saved);
+            // Re-validate session against DB
+            const fresh = await DataStore.authenticate(parsed.username, parsed._pw);
             if (fresh) {
-                currentUser = fresh;
-                onLoginSuccess();
+                currentUser = { ...fresh, _pw: parsed._pw };
+                sessionStorage.setItem('itpa_session', JSON.stringify(currentUser));
+                await onLoginSuccess();
             } else {
                 sessionStorage.removeItem('itpa_session');
                 currentUser = null;
             }
-        }
-
-        // Detectar token de invitación en la URL
-        const params = new URLSearchParams(window.location.search);
-        const inviteToken = params.get('invite');
-        if (inviteToken && !currentUser) {
-            const invites = DataStore.getInvites();
-            const invite = invites.find(i => i.token === inviteToken && !i.used);
-            if (invite) {
-                pendingInviteToken = inviteToken;
-                pendingInviteRole = invite.role;
-                setTimeout(() => {
-                    document.getElementById('loginCard').style.display = 'none';
-                    document.getElementById('registerCard').style.display = '';
-                    const roleLabel = DataStore.ROLES[invite.role]?.label || invite.role;
-                    const infoEl = document.getElementById('registerInviteInfo');
-                    if (infoEl) {
-                        infoEl.textContent = `Invitación válida — Se le asignará el rol: ${roleLabel}`;
-                        infoEl.style.display = '';
-                    }
-                }, 100);
-            }
-            window.history.replaceState({}, '', window.location.pathname);
         }
 
         setupListeners();
@@ -70,7 +48,7 @@ const Auth = (() => {
         document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
     }
 
-    function handleLogin() {
+    async function handleLogin() {
         const username = document.getElementById('loginUser').value.trim();
         const password = document.getElementById('loginPass').value.trim();
         const errorEl = document.getElementById('loginError');
@@ -80,19 +58,21 @@ const Auth = (() => {
             return;
         }
 
-        const user = DataStore.authenticate(username, password);
+        errorEl.textContent = 'Iniciando sesión...';
+
+        const user = await DataStore.authenticate(username, password);
         if (user) {
-            currentUser = user;
-            sessionStorage.setItem('itpa_session', JSON.stringify(user));
+            currentUser = { ...user, _pw: password };
+            sessionStorage.setItem('itpa_session', JSON.stringify(currentUser));
             errorEl.textContent = '';
-            onLoginSuccess();
+            await onLoginSuccess();
         } else {
             errorEl.textContent = 'Usuario o contraseña incorrectos.';
             document.getElementById('loginPass').value = '';
         }
     }
 
-    function handleRegister() {
+    async function handleRegister() {
         const username = document.getElementById('regUser').value.trim();
         const password = document.getElementById('regPass').value.trim();
         const passConfirm = document.getElementById('regPassConfirm').value.trim();
@@ -112,32 +92,17 @@ const Auth = (() => {
             return;
         }
 
-        // Si hay invitación pendiente, canjearla
-        let assignedRole = null;
-        if (pendingInviteToken) {
-            assignedRole = DataStore.redeemInvite(pendingInviteToken);
-            if (!assignedRole) {
-                errorEl.textContent = 'La invitación ya fue usada o es inválida.';
-                pendingInviteToken = null;
-                pendingInviteRole = null;
-                const infoEl = document.getElementById('registerInviteInfo');
-                if (infoEl) infoEl.style.display = 'none';
-                return;
-            }
-        }
+        errorEl.textContent = 'Creando cuenta...';
 
-        const result = DataStore.registerUser(username, password, fullName, assignedRole);
+        const result = await DataStore.registerUser(username, password, fullName);
         if (result.success) {
             const roleLabel = DataStore.ROLES[result.user.role]?.label || result.user.role;
-            successEl.textContent = `Cuenta creada exitosamente. Su rol es "${roleLabel}".${!assignedRole ? ' Un administrador puede asignarle más permisos.' : ''}`;
+            successEl.textContent = `Cuenta creada exitosamente. Su rol es "${roleLabel}". Un administrador puede asignarle más permisos.`;
+            errorEl.textContent = '';
             document.getElementById('regUser').value = '';
             document.getElementById('regPass').value = '';
             document.getElementById('regPassConfirm').value = '';
             document.getElementById('regFullName').value = '';
-            pendingInviteToken = null;
-            pendingInviteRole = null;
-            const infoEl = document.getElementById('registerInviteInfo');
-            if (infoEl) infoEl.style.display = 'none';
 
             setTimeout(() => {
                 document.getElementById('registerCard').style.display = 'none';
@@ -149,7 +114,7 @@ const Auth = (() => {
         }
     }
 
-    function onLoginSuccess() {
+    async function onLoginSuccess() {
         document.getElementById('loginSection').classList.remove('active');
         document.getElementById('cartSection').classList.add('active');
 
@@ -177,9 +142,9 @@ const Auth = (() => {
         document.getElementById('logoutBtn').style.display = '';
         document.querySelector('.sidebar__nav-item[data-section="cartSection"]')?.classList.add('active');
 
-        Cart.render();
-        Summary.update();
-        CartManager.updateCartSelector();
+        await Cart.render();
+        await Summary.update();
+        await CartManager.updateCartSelector();
     }
 
     function applyPermissions() {
@@ -217,16 +182,16 @@ const Auth = (() => {
     function isAdmin() { return currentUser?.role === 'admin'; }
     function canEdit() { return DataStore.hasPermission(currentUser, 'editor'); }
 
-    function refreshSession() {
+    async function refreshSession() {
         if (!currentUser) return;
-        const users = DataStore.getUsers();
+        const users = await DataStore.getUsers();
         const fresh = users.find(u =>
             (u.username === currentUser.username) ||
             (u.isMaster && currentUser.isMaster)
         );
         if (fresh) {
-            currentUser = fresh;
-            sessionStorage.setItem('itpa_session', JSON.stringify(fresh));
+            currentUser = { ...fresh, _pw: currentUser._pw };
+            sessionStorage.setItem('itpa_session', JSON.stringify(currentUser));
         }
     }
 

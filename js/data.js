@@ -39,12 +39,18 @@ const DataStore = (() => {
             _activeCartId = savedCartId;
         } else {
             // Obtener el primer carro
-            const carts = await getCarts();
-            if (carts.length > 0) {
-                _activeCartId = carts[0].id;
-                sessionStorage.setItem('itpa_active_cart', _activeCartId);
+            try {
+                const carts = await getCarts();
+                console.log('[DataStore] Carros encontrados:', carts.length);
+                if (carts.length > 0) {
+                    _activeCartId = carts[0].id;
+                    sessionStorage.setItem('itpa_active_cart', _activeCartId);
+                }
+            } catch (e) {
+                console.error('[DataStore] Error obteniendo carros:', e);
             }
         }
+        console.log('[DataStore] Active cart:', _activeCartId);
     }
 
     /* =================== INVENTARIO CRUD =================== */
@@ -52,7 +58,7 @@ const DataStore = (() => {
     /** Obtener todos los slots del carro activo */
     async function getAll() {
         if (!_activeCartId) return [];
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('slots')
             .select('*')
             .eq('cart_id', _activeCartId)
@@ -65,7 +71,7 @@ const DataStore = (() => {
     /** Obtener un slot específico */
     async function getSlot(shelf, index) {
         if (!_activeCartId) return null;
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('slots')
             .select('*')
             .eq('cart_id', _activeCartId)
@@ -80,7 +86,7 @@ const DataStore = (() => {
     async function updateSlot(shelf, index, fields) {
         if (!_activeCartId) return false;
         const dbFields = mapSlotToDB(fields);
-        const { error } = await supabase
+        const { error } = await db
             .from('slots')
             .update(dbFields)
             .eq('cart_id', _activeCartId)
@@ -137,7 +143,7 @@ const DataStore = (() => {
 
     /** Obtener todos los usuarios */
     async function getUsers() {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('users')
             .select('id, username, full_name, role, is_master, created_at')
             .order('created_at');
@@ -154,7 +160,7 @@ const DataStore = (() => {
 
     /** Autenticar usuario (login) */
     async function authenticate(username, password) {
-        const { data, error } = await supabase.rpc('verify_password', {
+        const { data, error } = await db.rpc('verify_password', {
             p_username: username,
             p_password: password
         });
@@ -176,7 +182,7 @@ const DataStore = (() => {
         const assignedRole = role || 'viewer';
 
         // Verificar si el username ya existe
-        const { data: existing } = await supabase
+        const { data: existing } = await db
             .from('users')
             .select('id')
             .eq('username', username)
@@ -186,7 +192,7 @@ const DataStore = (() => {
         }
 
         // Registrar via función RPC (hashes la contraseña server-side)
-        const { data: newId, error } = await supabase.rpc('register_user', {
+        const { data: newId, error } = await db.rpc('register_user', {
             p_username: username,
             p_password: password,
             p_full_name: fullName,
@@ -211,12 +217,12 @@ const DataStore = (() => {
         }
 
         // No permitir cambiar el rol de la cuenta maestra
-        const { data: target } = await supabase.from('users').select('is_master').eq('username', username).single();
+        const { data: target } = await db.from('users').select('is_master').eq('username', username).single();
         if (target?.is_master) {
             return { success: false, error: 'No se puede cambiar el rol de la cuenta maestra.' };
         }
 
-        const { error } = await supabase
+        const { error } = await db
             .from('users')
             .update({ role: newRole })
             .eq('username', username);
@@ -239,14 +245,14 @@ const DataStore = (() => {
         if (fields.username) updateFields.username = fields.username;
 
         if (Object.keys(updateFields).length > 0) {
-            const { error } = await supabase.from('users').update(updateFields).eq('username', username);
+            const { error } = await db.from('users').update(updateFields).eq('username', username);
             if (error) return { success: false, error: error.message };
         }
 
         // Si hay nueva contraseña, usar la función RPC
         if (fields.password) {
             const targetUsername = fields.username || username;
-            const { error } = await supabase.rpc('update_user_password', {
+            const { error } = await db.rpc('update_user_password', {
                 p_username: targetUsername,
                 p_new_password: fields.password
             });
@@ -262,12 +268,12 @@ const DataStore = (() => {
             return { success: false, error: 'No tiene permisos.' };
         }
 
-        const { data: target } = await supabase.from('users').select('is_master').eq('username', username).single();
+        const { data: target } = await db.from('users').select('is_master').eq('username', username).single();
         if (target?.is_master) {
             return { success: false, error: 'No se puede eliminar la cuenta maestra.' };
         }
 
-        const { error } = await supabase.from('users').delete().eq('username', username);
+        const { error } = await db.from('users').delete().eq('username', username);
         if (error) return { success: false, error: error.message };
         return { success: true };
     }
@@ -282,7 +288,7 @@ const DataStore = (() => {
 
     /** Registrar una transacción */
     async function addTransaction(txn) {
-        const { error } = await supabase.from('transactions').insert({
+        const { error } = await db.from('transactions').insert({
             tipo: txn.tipo,
             equipos: txn.equipos,
             responsable: txn.responsable || '',
@@ -294,7 +300,7 @@ const DataStore = (() => {
 
     /** Obtener todas las transacciones */
     async function getTransactions() {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('transactions')
             .select('*')
             .order('created_at', { ascending: false });
@@ -312,7 +318,7 @@ const DataStore = (() => {
 
     /** Obtener todos los carros */
     async function getCarts() {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from('carts')
             .select('*')
             .order('created_at');
@@ -349,7 +355,7 @@ const DataStore = (() => {
         const shelvesArr = SHELF_KEYS.slice(0, shelvesCount);
 
         // Insertar el carro
-        const { data: newCart, error: cartError } = await supabase
+        const { data: newCart, error: cartError } = await db
             .from('carts')
             .insert({ name: name.trim(), shelves: shelvesArr, slots_per_shelf: slotsPerShelf })
             .select()
@@ -365,7 +371,7 @@ const DataStore = (() => {
             }
         });
 
-        const { error: slotsError } = await supabase.from('slots').insert(slotsToInsert);
+        const { error: slotsError } = await db.from('slots').insert(slotsToInsert);
         if (slotsError) console.error('Error creating slots:', slotsError);
 
         return { success: true, cart: newCart };
@@ -383,7 +389,7 @@ const DataStore = (() => {
         }
 
         // Eliminar el carro (ON DELETE CASCADE eliminará los slots)
-        const { error } = await supabase.from('carts').delete().eq('id', cartId);
+        const { error } = await db.from('carts').delete().eq('id', cartId);
         if (error) return { success: false, error: error.message };
 
         // Si era el carro activo, cambiar al primero disponible

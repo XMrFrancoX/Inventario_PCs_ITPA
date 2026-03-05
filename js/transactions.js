@@ -1,9 +1,5 @@
 /**
  * transactions.js — Módulo de Transacciones / Movimiento de Equipo
- *
- * Reemplaza la entrega masiva con un formulario completo de movimiento
- * que registra: tipo, solicitante, retirante, timestamp automático,
- * y usuario activo (auditoría).
  */
 const Transactions = (() => {
 
@@ -15,23 +11,19 @@ const Transactions = (() => {
     };
 
     function init() {
-        // Mass delivery button opens the transaction modal
         document.getElementById('massDeliverBtn')?.addEventListener('click', openTransactionModal);
         document.getElementById('massCancelBtn')?.addEventListener('click', () => Cart.toggleSelectionMode());
 
-        // Close modal
         document.getElementById('txnModalClose')?.addEventListener('click', closeModal);
         document.getElementById('massDeliveryModal')?.addEventListener('click', e => {
             if (e.target.id === 'massDeliveryModal') closeModal();
         });
 
-        // Form submit
         document.getElementById('txnForm')?.addEventListener('submit', e => {
             e.preventDefault();
             handleMovement();
         });
 
-        // Toggle destino fields visibility based on movement type
         document.getElementById('txnTipo')?.addEventListener('change', e => {
             const tipo = e.target.value;
             const detalleGroup = document.getElementById('txnDetalleGroup');
@@ -40,7 +32,6 @@ const Transactions = (() => {
             const retiranteGroup = document.getElementById('txnRetiranteGroup');
 
             if (tipo === 'retorno') {
-                // Al devolver, los campos de responsable no son obligatorios
                 detalleGroup.style.display = 'none';
                 cursoGroup.style.display = 'none';
                 solicitanteGroup.style.display = 'none';
@@ -54,22 +45,21 @@ const Transactions = (() => {
         });
     }
 
-    function openTransactionModal() {
+    async function openTransactionModal() {
         const selected = Cart.getSelectedSlots();
         if (selected.length === 0) return;
 
-        const slots = selected.map(s => DataStore.getSlot(s.shelf, s.index)).filter(Boolean);
+        // Fetch slot data for selected slots
+        const slotPromises = selected.map(s => DataStore.getSlot(s.shelf, s.index));
+        const slots = (await Promise.all(slotPromises)).filter(Boolean);
 
-        // Update count
         document.getElementById('txnCount').textContent = selected.length;
 
-        // List selected IDs
         const listEl = document.getElementById('txnSelectedList');
         listEl.innerHTML = slots.map(s => `
-            <span class="status-badge status-badge--${s.status}">${s.laptopId || `R${s.slotIndex + 1}`}</span>
+            <span class="status-badge status-badge--${s.status}">${s.laptopId || `R${s.slotIndex}`}</span>
         `).join(' ');
 
-        // Auto-fill timestamp
         const now = new Date();
         const timestampEl = document.getElementById('txnTimestamp');
         timestampEl.value = now.toLocaleString('es-AR', {
@@ -77,11 +67,9 @@ const Transactions = (() => {
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
 
-        // Auto-fill active user
         const user = Auth.getUser();
         document.getElementById('txnUsuarioActivo').value = user ? `${user.fullName} (@${user.username})` : '';
 
-        // Reset form fields
         document.getElementById('txnTipo').value = 'clase';
         document.getElementById('txnTipo').dispatchEvent(new Event('change'));
         document.getElementById('txnSolicitante').value = '';
@@ -91,7 +79,6 @@ const Transactions = (() => {
         document.getElementById('txnObservaciones').value = '';
         document.getElementById('txnError').textContent = '';
 
-        // Show modal
         document.getElementById('massDeliveryModal').classList.add('visible');
     }
 
@@ -99,7 +86,7 @@ const Transactions = (() => {
         document.getElementById('massDeliveryModal').classList.remove('visible');
     }
 
-    function handleMovement() {
+    async function handleMovement() {
         const tipo = document.getElementById('txnTipo').value;
         const solicitante = document.getElementById('txnSolicitante').value.trim();
         const retirante = document.getElementById('txnRetirante').value.trim();
@@ -111,7 +98,6 @@ const Transactions = (() => {
 
         errorEl.textContent = '';
 
-        // Validations
         if (tipo !== 'retorno') {
             if (!solicitante) {
                 errorEl.textContent = 'Ingrese quién solicita el equipo (Docente/Jefe).';
@@ -125,14 +111,13 @@ const Transactions = (() => {
             return;
         }
 
-        // Build slot updates
         const movInfo = MOVEMENT_TYPES[tipo];
         const now = new Date();
         const horaStr = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
         const updates = selected.map(s => ({
             shelf: s.shelf,
-            index: s.index,
+            slotIndex: s.index,
             fields: {
                 status: movInfo.status,
                 responsable: tipo === 'retorno' ? '' : solicitante,
@@ -143,44 +128,37 @@ const Transactions = (() => {
             }
         }));
 
-        // Apply bulk update
-        DataStore.bulkUpdate(updates);
+        errorEl.textContent = 'Procesando...';
+        await DataStore.bulkUpdate(updates);
 
         // Get laptop IDs for the transaction record
-        const laptopIds = selected.map(s => {
-            const slot = DataStore.getSlot(s.shelf, s.index);
-            return slot ? slot.laptopId : `R${s.index + 1}`;
+        const slotPromises = selected.map(s => DataStore.getSlot(s.shelf, s.index));
+        const slotsAfter = (await Promise.all(slotPromises)).filter(Boolean);
+        const laptopIds = slotsAfter.map(s => s.laptopId || `R${s.slotIndex}`);
+
+        await DataStore.addTransaction({
+            tipo: tipo,
+            equipos: laptopIds.join(', '),
+            responsable: solicitante || '',
+            operador: user ? user.fullName : ''
         });
 
-        // Log transaction
-        DataStore.addTransaction({
-            laptopIds,
-            tipoMovimiento: tipo,
-            solicitante,
-            retirante,
-            curso,
-            destino,
-            observaciones,
-            usuario: user
-        });
-
-        // Close & refresh
         closeModal();
         Cart.toggleSelectionMode();
-        Cart.render();
-        Summary.update();
+        await Cart.render();
+        await Summary.update();
     }
 
     /* --------- Historial --------- */
-    function renderHistory() {
+    async function renderHistory() {
         const container = document.getElementById('txnHistoryBody');
         if (!container) return;
 
-        const transactions = DataStore.getTransactions();
+        const transactions = await DataStore.getTransactions();
 
         if (transactions.length === 0) {
             container.innerHTML = `
-                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px; font-size:.88rem;">
+                <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:40px; font-size:.88rem;">
                     No hay movimientos registrados aún.
                 </td></tr>
             `;
@@ -188,16 +166,16 @@ const Transactions = (() => {
         }
 
         container.innerHTML = transactions.map(txn => {
-            const date = new Date(txn.timestamp);
+            const date = new Date(txn.fecha);
             const dateStr = date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
             const timeStr = date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-            const movType = MOVEMENT_TYPES[txn.tipoMovimiento];
-            const badgeClass = txn.tipoMovimiento === 'retorno' ? 'almacenada'
-                : txn.tipoMovimiento === 'clase' ? 'enuso'
-                    : txn.tipoMovimiento === 'staff' ? 'staff'
+            const movType = MOVEMENT_TYPES[txn.tipo];
+            const badgeClass = txn.tipo === 'retorno' ? 'almacenada'
+                : txn.tipo === 'clase' ? 'enuso'
+                    : txn.tipo === 'staff' ? 'staff'
                         : 'excepcion';
 
-            const ids = txn.laptopIds.map(id =>
+            const ids = (txn.equipos || '').split(', ').filter(Boolean).map(id =>
                 `<span class="status-badge status-badge--${badgeClass}" style="font-size:.6rem;">${id}</span>`
             ).join(' ');
 
@@ -208,18 +186,16 @@ const Transactions = (() => {
                         <div style="font-size:.7rem; color:var(--text-muted);">${timeStr}</div>
                     </td>
                     <td class="users-table__cell">
-                        <span class="status-badge status-badge--${badgeClass}">${movType ? movType.label : txn.tipoMovimiento}</span>
+                        <span class="status-badge status-badge--${badgeClass}">${movType ? movType.label : txn.tipo}</span>
                     </td>
                     <td class="users-table__cell">
                         <div style="display:flex; flex-wrap:wrap; gap:4px;">${ids}</div>
                     </td>
                     <td class="users-table__cell">
-                        ${txn.solicitante ? `<div style="font-size:.82rem;"><strong>Solicita:</strong> ${esc(txn.solicitante)}</div>` : ''}
-                        ${txn.retirante ? `<div style="font-size:.78rem; color:var(--text-secondary);">Retira: ${esc(txn.retirante)}</div>` : ''}
-                        ${txn.curso ? `<div style="font-size:.78rem; color:var(--text-secondary);">Curso: ${esc(txn.curso)}</div>` : ''}
+                        ${txn.responsable ? `<div style="font-size:.82rem;"><strong>Solicita:</strong> ${esc(txn.responsable)}</div>` : ''}
                     </td>
                     <td class="users-table__cell" style="font-size:.78rem; color:var(--text-secondary);">
-                        ${txn.usuario ? esc(txn.usuario.fullName) : '—'}
+                        ${txn.operador ? esc(txn.operador) : '—'}
                     </td>
                 </tr>
             `;

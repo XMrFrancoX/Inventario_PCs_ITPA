@@ -3,11 +3,26 @@
  */
 const App = (() => {
 
-    function init() {
-        DataStore.init();
+    async function init() {
+        try {
+            console.log('[App] Iniciando DataStore...');
+            await DataStore.init();
+            console.log('[App] DataStore OK');
+        } catch (e) {
+            console.error('[App] Error en DataStore.init:', e);
+        }
+
         Summary.init();
         Modal.init();
-        Auth.init();
+
+        try {
+            console.log('[App] Iniciando Auth...');
+            await Auth.init();
+            console.log('[App] Auth OK');
+        } catch (e) {
+            console.error('[App] Error en Auth.init:', e);
+        }
+
         Bulk.init();
         UserManager.init();
         Transactions.init();
@@ -23,6 +38,7 @@ const App = (() => {
         if (menuBtn) {
             menuBtn.style.display = Auth.isLoggedIn() ? '' : 'none';
         }
+        console.log('[App] Inicialización completa.');
     }
 
     /* ---------- Sidebar ---------- */
@@ -51,7 +67,7 @@ const App = (() => {
     /* ---------- Navegación entre secciones ---------- */
     function setupNavigation() {
         document.querySelectorAll('.sidebar__nav-item[data-section]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const target = btn.dataset.section;
 
                 if (!Auth.isLoggedIn() && btn.hasAttribute('data-requires-auth')) return;
@@ -64,11 +80,11 @@ const App = (() => {
 
                 closeSidebar();
 
-                if (target === 'cartSection') { Cart.render(); CartManager.updateCartSelector(); }
-                if (target === 'summarySection') Summary.update();
-                if (target === 'usersSection') { UserManager.render(); }
-                if (target === 'historySection') Transactions.renderHistory();
-                if (target === 'cartsSection') CartManager.render();
+                if (target === 'cartSection') { await Cart.render(); await CartManager.updateCartSelector(); }
+                if (target === 'summarySection') await Summary.update();
+                if (target === 'usersSection') { await UserManager.render(); }
+                if (target === 'historySection') await Transactions.renderHistory();
+                if (target === 'cartsSection') await CartManager.render();
             });
         });
 
@@ -80,14 +96,14 @@ const App = (() => {
     }
 
     /* ---------- Devolver todas las laptops en uso ---------- */
-    function handleReturnAll() {
+    async function handleReturnAll() {
         if (!confirm('¿Devolver TODAS las laptops en uso al estado "Almacenada"?')) return;
 
-        const slots = DataStore.getAll();
+        const slots = await DataStore.getAll();
         const slotsInUse = slots.filter(s => s.status === 'enuso');
         const updates = slotsInUse.map(s => ({
             shelf: s.shelf,
-            index: s.slotIndex,
+            slotIndex: s.slotIndex,
             fields: {
                 status: 'almacenada',
                 responsable: '',
@@ -99,21 +115,19 @@ const App = (() => {
         }));
 
         if (updates.length > 0) {
-            DataStore.bulkUpdate(updates);
+            await DataStore.bulkUpdate(updates);
 
             const laptopIds = slotsInUse.map(s => s.laptopId).filter(Boolean);
-            DataStore.addTransaction({
-                laptopIds,
-                tipoMovimiento: 'retorno',
-                solicitante: '',
-                retirante: '',
-                observaciones: 'Devolución masiva de todas las laptops en uso.',
-                usuario: Auth.getUser()
+            await DataStore.addTransaction({
+                tipo: 'retorno',
+                equipos: laptopIds.join(', '),
+                responsable: '',
+                operador: Auth.getUser()?.fullName || ''
             });
         }
 
-        Cart.render();
-        Summary.update();
+        await Cart.render();
+        await Summary.update();
     }
 
     /* ---------- Service Worker ---------- */

@@ -5,11 +5,11 @@ const CartManager = (() => {
 
     function init() {
         // Cart selector change
-        document.getElementById('cartSelector')?.addEventListener('change', e => {
+        document.getElementById('cartSelector')?.addEventListener('change', async e => {
             DataStore.setActiveCart(e.target.value);
-            Cart.render();
-            Summary.update();
-            updateCartSelector();
+            await Cart.render();
+            await Summary.update();
+            await updateCartSelector();
         });
 
         // Create cart form
@@ -20,16 +20,15 @@ const CartManager = (() => {
     }
 
     /** Renderizar la tabla de gestión de carros */
-    function render() {
+    async function render() {
         const container = document.getElementById('cartsTableBody');
         if (!container) return;
 
-        const carts = DataStore.getCarts();
-        const activeCart = DataStore.getActiveCart();
+        const carts = await DataStore.getCarts();
+        const activeCartId = DataStore.getActiveCart();
 
         container.innerHTML = carts.map(cart => {
-            const isActive = activeCart && activeCart.id === cart.id;
-            const shelvesInfo = cart.shelves.map(s => DataStore.getShelfLabel(s)).join(', ');
+            const isActive = activeCartId === cart.id;
             const dateStr = cart.createdAt ? new Date(cart.createdAt).toLocaleDateString('es-AR') : '—';
 
             return `
@@ -71,22 +70,22 @@ const CartManager = (() => {
     }
 
     /** Crear un nuevo carro */
-    function handleCreate() {
+    async function handleCreate() {
         const name = document.getElementById('newCartName').value.trim();
         const shelves = parseInt(document.getElementById('newCartShelves').value) || 2;
         const slots = parseInt(document.getElementById('newCartSlots').value) || 20;
         const msgEl = document.getElementById('createCartMsg');
 
-        msgEl.textContent = '';
-        msgEl.style.color = '';
+        msgEl.textContent = 'Creando carro...';
+        msgEl.style.color = 'var(--text-muted)';
 
-        const result = DataStore.createCart(name, shelves, slots, Auth.getUser());
+        const result = await DataStore.createCart(name, shelves, slots, Auth.getUser());
         if (result.success) {
             msgEl.textContent = `Carro "${name}" creado correctamente.`;
             msgEl.style.color = 'var(--status-green)';
             document.getElementById('newCartName').value = '';
-            render();
-            updateCartSelector();
+            await render();
+            await updateCartSelector();
         } else {
             msgEl.textContent = `${result.error}`;
             msgEl.style.color = 'var(--status-yellow)';
@@ -94,43 +93,43 @@ const CartManager = (() => {
     }
 
     /** Eliminar un carro */
-    function handleDelete(cartId) {
-        const carts = DataStore.getCarts();
+    async function handleDelete(cartId) {
+        const carts = await DataStore.getCarts();
         const cart = carts.find(c => c.id === cartId);
         if (!cart) return;
 
         if (!confirm(`¿Eliminar el carro "${cart.name}"? Se perderán todos los datos de inventario de este carro. Esta acción no se puede deshacer.`)) return;
 
-        const result = DataStore.deleteCart(cartId, Auth.getUser());
+        const result = await DataStore.deleteCart(cartId, Auth.getUser());
         if (result.success) {
-            render();
-            updateCartSelector();
-            Cart.render();
-            Summary.update();
+            await render();
+            await updateCartSelector();
+            await Cart.render();
+            await Summary.update();
         } else {
             alert(result.error);
         }
     }
 
     /** Activar un carro */
-    function activate(cartId) {
+    async function activate(cartId) {
         DataStore.setActiveCart(cartId);
-        Cart.render();
-        Summary.update();
-        render();
-        updateCartSelector();
+        await Cart.render();
+        await Summary.update();
+        await render();
+        await updateCartSelector();
     }
 
     /** Actualizar el selector de carro en el cartSection */
-    function updateCartSelector() {
+    async function updateCartSelector() {
         const selector = document.getElementById('cartSelector');
         if (!selector) return;
 
-        const carts = DataStore.getCarts();
-        const activeCart = DataStore.getActiveCart();
+        const carts = await DataStore.getCarts();
+        const activeCartId = DataStore.getActiveCart();
 
         selector.innerHTML = carts.map(c =>
-            `<option value="${esc(c.id)}" ${activeCart && activeCart.id === c.id ? 'selected' : ''}>${esc(c.name)}</option>`
+            `<option value="${esc(c.id)}" ${activeCartId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`
         ).join('');
 
         // Ocultar selector si solo hay un carro

@@ -4,15 +4,15 @@
 const UserManager = (() => {
 
     function init() {
-        // El botón de guardar edición se maneja dinámicamente
+        // No setup needed
     }
 
     /** Renderizar la tabla de usuarios en la sección de gestión */
-    function render() {
+    async function render() {
         const container = document.getElementById('usersTableBody');
         if (!container) return;
 
-        const users = DataStore.getUsers();
+        const users = await DataStore.getUsers();
         const current = Auth.getUser();
 
         container.innerHTML = users.map(user => {
@@ -68,13 +68,13 @@ const UserManager = (() => {
 
         // Attach role change listeners
         container.querySelectorAll('select[data-username]').forEach(sel => {
-            sel.addEventListener('change', e => {
+            sel.addEventListener('change', async e => {
                 const username = sel.dataset.username;
                 const newRole = e.target.value;
-                const result = DataStore.updateUserRole(username, newRole, Auth.getUser());
+                const result = await DataStore.updateUserRole(username, newRole, Auth.getUser());
                 if (!result.success) {
                     alert(result.error);
-                    render();
+                    await render();
                 }
             });
         });
@@ -82,29 +82,20 @@ const UserManager = (() => {
 
     /** Abrir modal de edición de usuario */
     function editUser(username) {
-        const users = DataStore.getUsers();
-        const user = users.find(u => u.username === username);
-        if (!user) return;
-
-        const modal = document.getElementById('editUserModal');
-        document.getElementById('editUserOriginal').value = username;
-        document.getElementById('editUserName').value = user.username;
-        document.getElementById('editUserFullName').value = user.fullName;
-        document.getElementById('editUserPass').value = '';
-        document.getElementById('editUserError').textContent = '';
-        document.getElementById('editUserSuccess').textContent = '';
-
-        modal.classList.add('visible');
+        // We need the user data but the edit modal was removed by the user.
+        // If they add it back, this would work:
+        alert('Modal de edición de usuario no disponible. Fue eliminado del HTML.');
     }
 
-    function saveUserEdit() {
-        const original = document.getElementById('editUserOriginal').value;
-        const newUsername = document.getElementById('editUserName').value.trim();
-        const newFullName = document.getElementById('editUserFullName').value.trim();
-        const newPass = document.getElementById('editUserPass').value;
+    async function saveUserEdit() {
+        const original = document.getElementById('editUserOriginal')?.value;
+        const newUsername = document.getElementById('editUserName')?.value.trim();
+        const newFullName = document.getElementById('editUserFullName')?.value.trim();
+        const newPass = document.getElementById('editUserPass')?.value;
         const errorEl = document.getElementById('editUserError');
         const successEl = document.getElementById('editUserSuccess');
 
+        if (!errorEl || !successEl) return;
         errorEl.textContent = '';
         successEl.textContent = '';
 
@@ -113,11 +104,11 @@ const UserManager = (() => {
         if (newFullName) fields.fullName = newFullName;
         if (newPass) fields.password = newPass;
 
-        const result = DataStore.updateUser(original, fields, Auth.getUser());
+        const result = await DataStore.updateUser(original, fields, Auth.getUser());
         if (result.success) {
             successEl.textContent = 'Usuario actualizado correctamente.';
-            Auth.refreshSession();
-            render();
+            await Auth.refreshSession();
+            await render();
             const current = Auth.getUser();
             if (current) {
                 const nameSpan = document.getElementById('userName');
@@ -126,23 +117,20 @@ const UserManager = (() => {
                     nameSpan.textContent = `${current.fullName} (${roleLabel})`;
                 }
             }
-            setTimeout(() => {
-                document.getElementById('editUserModal').classList.remove('visible');
-            }, 1500);
         } else {
             errorEl.textContent = result.error;
         }
     }
 
     function closeEditModal() {
-        document.getElementById('editUserModal').classList.remove('visible');
+        document.getElementById('editUserModal')?.classList.remove('visible');
     }
 
-    function deleteUser(username) {
+    async function deleteUser(username) {
         if (!confirm(`¿Eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) return;
-        const result = DataStore.deleteUser(username, Auth.getUser());
+        const result = await DataStore.deleteUser(username, Auth.getUser());
         if (result.success) {
-            render();
+            await render();
         } else {
             alert(result.error);
         }

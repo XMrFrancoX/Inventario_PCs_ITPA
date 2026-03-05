@@ -20,12 +20,14 @@ const Cart = (() => {
         staff: 'Staff'
     };
 
-    function render() {
+    async function render() {
         const container = document.getElementById('cartContainer');
         if (!container) return;
 
-        const slots = DataStore.getAll();
-        const activeCart = DataStore.getActiveCart();
+        const slots = await DataStore.getAll();
+        const activeCartId = DataStore.getActiveCart();
+        const carts = await DataStore.getCarts();
+        const activeCart = carts.find(c => c.id === activeCartId);
         const shelves = activeCart ? activeCart.shelves : ['superior', 'inferior'];
 
         container.innerHTML = shelves.map(shelf => {
@@ -37,7 +39,7 @@ const Cart = (() => {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/>
             </svg>
-            Estante ${shelfLabel}
+            ${shelfLabel}
           </div>
           <div class="cart-shelf__grid">
             ${shelfSlots.map(slot => renderSlot(slot)).join('')}
@@ -58,7 +60,7 @@ const Cart = (() => {
         const label = slot.laptopId || '—';
         const tooltipText = slot.laptopId
             ? `${slot.laptopId} — ${STATUS_LABELS[slot.status]}${slot.status === 'enuso' ? ` (${slot.responsable || '?'})` : ''}`
-            : `Ranura ${slot.slotIndex + 1} — Vacío`;
+            : `Ranura ${slot.slotIndex} — Vacío`;
 
         return `
       <div class="slot ${statusClass} ${isSelected ? 'selected' : ''}"
@@ -67,12 +69,12 @@ const Cart = (() => {
         <div class="slot__tooltip">${tooltipText}</div>
         <div class="slot__icon">${LAPTOP_SVG}</div>
         <div class="slot__label">${label}</div>
-        <div class="slot__number">${slot.slotIndex + 1}</div>
+        <div class="slot__number">${slot.slotIndex}</div>
       </div>
     `;
     }
 
-    function handleSlotClick(e) {
+    async function handleSlotClick(e) {
         const el = e.currentTarget;
         const shelf = el.dataset.shelf;
         const index = parseInt(el.dataset.index);
@@ -83,7 +85,7 @@ const Cart = (() => {
                 selectedSlots.delete(key);
                 el.classList.remove('selected');
             } else {
-                const slot = DataStore.getSlot(shelf, index);
+                const slot = await DataStore.getSlot(shelf, index);
                 if (slot && slot.laptopId) {
                     selectedSlots.add(key);
                     el.classList.add('selected');

@@ -2,46 +2,46 @@
  * modal.js — Modal de ficha técnica de laptop
  */
 const Modal = (() => {
-    let currentSlot = null;
-    let editMode = false;
+  let currentSlot = null;
+  let editMode = false;
 
-    function open(shelf, index) {
-        const slot = DataStore.getSlot(shelf, index);
-        if (!slot) return;
-        currentSlot = { shelf, index };
-        editMode = false;
+  async function open(shelf, index) {
+    const slot = await DataStore.getSlot(shelf, index);
+    if (!slot) return;
+    currentSlot = { shelf, index };
+    editMode = false;
 
-        renderModal(slot);
-        document.getElementById('laptopModal').classList.add('visible');
-        document.body.style.overflow = 'hidden';
-    }
+    renderModal(slot);
+    document.getElementById('laptopModal').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
 
-    function close() {
-        document.getElementById('laptopModal').classList.remove('visible');
-        document.body.style.overflow = '';
-        currentSlot = null;
-        editMode = false;
-    }
+  function close() {
+    document.getElementById('laptopModal').classList.remove('visible');
+    document.body.style.overflow = '';
+    currentSlot = null;
+    editMode = false;
+  }
 
-    function renderModal(slot) {
-        const modal = document.getElementById('laptopModalContent');
-        const statusOptions = [
-            { value: 'vacio', label: 'Vacío (Sin asignar)', color: 'gray' },
-            { value: 'almacenada', label: '🟢 Almacenada (Disponible)', color: 'green' },
-            { value: 'enuso', label: '🔴 En uso', color: 'red' },
-            { value: 'excepcion', label: '🟡 Excepción', color: 'yellow' },
-            { value: 'staff', label: '🔵 Uso Staff', color: 'blue' }
-        ];
+  function renderModal(slot) {
+    const modal = document.getElementById('laptopModalContent');
+    const statusOptions = [
+      { value: 'vacio', label: 'Vacío (Sin asignar)', color: 'gray' },
+      { value: 'almacenada', label: 'Almacenada (Disponible)', color: 'green' },
+      { value: 'enuso', label: 'En uso', color: 'red' },
+      { value: 'excepcion', label: 'Excepción', color: 'yellow' },
+      { value: 'staff', label: 'Uso Staff', color: 'blue' }
+    ];
 
-        const title = slot.laptopId || `Ranura ${slot.slotIndex + 1}`;
-        const shelfLabel = slot.shelf === 'superior' ? 'Superior' : 'Inferior';
+    const title = slot.laptopId || `Ranura ${slot.slotIndex}`;
+    const shelfLabel = DataStore.getShelfLabel(slot.shelf);
 
-        document.getElementById('modalTitle').innerHTML = `
+    document.getElementById('modalTitle').innerHTML = `
       <span class="status-badge status-badge--${slot.status}">${statusLabel(slot.status)}</span>
-      ${title} — Estante ${shelfLabel}
+      ${title} — ${shelfLabel}
     `;
 
-        modal.innerHTML = `
+    modal.innerHTML = `
       <!-- Mode switch -->
       <div class="switch-wrapper" style="margin-bottom: 20px;">
         <label class="switch">
@@ -213,139 +213,138 @@ const Modal = (() => {
       </div>
     `;
 
-        // Edit mode switch listener
-        document.getElementById('editModeSwitch').addEventListener('change', (e) => {
-            editMode = e.target.checked;
-            toggleFields(editMode);
-            updateFooterButtons();
-        });
+    // Edit mode switch listener
+    document.getElementById('editModeSwitch').addEventListener('change', (e) => {
+      editMode = e.target.checked;
+      toggleFields(editMode);
+      updateFooterButtons();
+    });
 
-        updateFooterButtons();
-    }
+    updateFooterButtons();
+  }
 
-    function renderCheckbox(id, label, checked) {
-        return `
+  function renderCheckbox(id, label, checked) {
+    return `
       <label class="checkbox-item ${editMode ? '' : 'disabled'}">
         <input type="checkbox" id="${id}" ${checked ? 'checked' : ''} ${editMode ? '' : 'disabled'}>
         ${label}
       </label>
     `;
-    }
+  }
 
-    function toggleFields(enabled) {
-        const modal = document.getElementById('laptopModalContent');
-        modal.querySelectorAll('.form-input, .form-select').forEach(el => {
-            if (el.id === 'fld_entregadoPor') {
-                el.readOnly = true;
-                el.disabled = !enabled;
-                return;
-            }
-            el.disabled = !enabled;
-        });
-        modal.querySelectorAll('.checkbox-item').forEach(el => {
-            el.classList.toggle('disabled', !enabled);
-            el.querySelector('input[type="checkbox"]').disabled = !enabled;
-        });
-    }
+  function toggleFields(enabled) {
+    const modal = document.getElementById('laptopModalContent');
+    modal.querySelectorAll('.form-input, .form-select').forEach(el => {
+      if (el.id === 'fld_entregadoPor') {
+        el.readOnly = true;
+        el.disabled = !enabled;
+        return;
+      }
+      el.disabled = !enabled;
+    });
+    modal.querySelectorAll('.checkbox-item').forEach(el => {
+      el.classList.toggle('disabled', !enabled);
+      el.querySelector('input[type="checkbox"]').disabled = !enabled;
+    });
+  }
 
-    function updateFooterButtons() {
-        const footer = document.getElementById('modalFooter');
-        if (editMode) {
-            footer.innerHTML = `
+  function updateFooterButtons() {
+    const footer = document.getElementById('modalFooter');
+    if (editMode) {
+      footer.innerHTML = `
         <button class="btn btn--secondary" id="modalCancelBtn">Cancelar</button>
         <button class="btn btn--success" id="modalSaveBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           Guardar Cambios
         </button>
       `;
-            document.getElementById('modalCancelBtn').addEventListener('click', () => {
-                editMode = false;
-                const slot = DataStore.getSlot(currentSlot.shelf, currentSlot.index);
-                renderModal(slot);
-            });
-            document.getElementById('modalSaveBtn').addEventListener('click', saveSlot);
-        } else {
-            footer.innerHTML = `
+      document.getElementById('modalCancelBtn').addEventListener('click', async () => {
+        editMode = false;
+        const slot = await DataStore.getSlot(currentSlot.shelf, currentSlot.index);
+        renderModal(slot);
+      });
+      document.getElementById('modalSaveBtn').addEventListener('click', saveSlot);
+    } else {
+      footer.innerHTML = `
         <button class="btn btn--secondary" id="modalCloseBtn2">Cerrar</button>
       `;
-            document.getElementById('modalCloseBtn2').addEventListener('click', close);
-        }
+      document.getElementById('modalCloseBtn2').addEventListener('click', close);
+    }
+  }
+
+  async function saveSlot() {
+    if (!currentSlot) return;
+
+    const user = Auth.getUser();
+    const fields = {
+      laptopId: document.getElementById('fld_laptopId').value.trim(),
+      status: document.getElementById('fld_status').value,
+      responsable: document.getElementById('fld_responsable').value.trim(),
+      curso: document.getElementById('fld_curso').value.trim(),
+      hora: document.getElementById('fld_hora').value,
+      entregadoPor: user ? user.fullName : document.getElementById('fld_entregadoPor').value.trim(),
+      ubicacion: document.getElementById('fld_ubicacion').value.trim(),
+      marca: document.getElementById('fld_marca').value.trim(),
+      modelo: document.getElementById('fld_modelo').value.trim(),
+      serie: document.getElementById('fld_serie').value.trim(),
+      mac: document.getElementById('fld_mac').value.trim(),
+      ip: document.getElementById('fld_ip').value.trim(),
+      adminLocal: document.getElementById('fld_adminLocal').value.trim(),
+      biosPass: document.getElementById('fld_biosPass').value,
+      cpu: document.getElementById('fld_cpu').value.trim(),
+      ram: document.getElementById('fld_ram').value.trim(),
+      storage: document.getElementById('fld_storage').value.trim(),
+      observaciones: document.getElementById('fld_observaciones').value.trim(),
+      software: {
+        windows: document.getElementById('sw_windows').checked,
+        office: document.getElementById('sw_office').checked,
+        autocad: document.getElementById('sw_autocad').checked,
+        solidworks: document.getElementById('sw_solidworks').checked,
+        vscode: document.getElementById('sw_vscode').checked,
+        arduino: document.getElementById('sw_arduino').checked,
+      },
+      mantenimiento: {
+        limpiezaInterna: document.getElementById('mt_limpiezaInterna').checked,
+        limpiezaExterna: document.getElementById('mt_limpiezaExterna').checked,
+        actualizacionSO: document.getElementById('mt_actualizacionSO').checked,
+        actualizacionDrivers: document.getElementById('mt_actualizacionDrivers').checked,
+        revisionBateria: document.getElementById('mt_revisionBateria').checked,
+        revisionCargador: document.getElementById('mt_revisionCargador').checked,
+        revisionPantalla: document.getElementById('mt_revisionPantalla').checked,
+        revisionTeclado: document.getElementById('mt_revisionTeclado').checked,
+      }
+    };
+
+    if (user && fields.status === 'enuso') {
+      fields.entregadoPor = user.fullName;
     }
 
-    function saveSlot() {
-        if (!currentSlot) return;
+    await DataStore.updateSlot(currentSlot.shelf, currentSlot.index, fields);
+    close();
+    await Cart.render();
+    await Summary.update();
+  }
 
-        const user = Auth.getUser();
-        const fields = {
-            laptopId: document.getElementById('fld_laptopId').value.trim(),
-            status: document.getElementById('fld_status').value,
-            responsable: document.getElementById('fld_responsable').value.trim(),
-            curso: document.getElementById('fld_curso').value.trim(),
-            hora: document.getElementById('fld_hora').value,
-            entregadoPor: user ? user.fullName : document.getElementById('fld_entregadoPor').value.trim(),
-            ubicacion: document.getElementById('fld_ubicacion').value.trim(),
-            marca: document.getElementById('fld_marca').value.trim(),
-            modelo: document.getElementById('fld_modelo').value.trim(),
-            serie: document.getElementById('fld_serie').value.trim(),
-            mac: document.getElementById('fld_mac').value.trim(),
-            ip: document.getElementById('fld_ip').value.trim(),
-            adminLocal: document.getElementById('fld_adminLocal').value.trim(),
-            biosPass: document.getElementById('fld_biosPass').value,
-            cpu: document.getElementById('fld_cpu').value.trim(),
-            ram: document.getElementById('fld_ram').value.trim(),
-            storage: document.getElementById('fld_storage').value.trim(),
-            observaciones: document.getElementById('fld_observaciones').value.trim(),
-            software: {
-                windows: document.getElementById('sw_windows').checked,
-                office: document.getElementById('sw_office').checked,
-                autocad: document.getElementById('sw_autocad').checked,
-                solidworks: document.getElementById('sw_solidworks').checked,
-                vscode: document.getElementById('sw_vscode').checked,
-                arduino: document.getElementById('sw_arduino').checked,
-            },
-            mantenimiento: {
-                limpiezaInterna: document.getElementById('mt_limpiezaInterna').checked,
-                limpiezaExterna: document.getElementById('mt_limpiezaExterna').checked,
-                actualizacionSO: document.getElementById('mt_actualizacionSO').checked,
-                actualizacionDrivers: document.getElementById('mt_actualizacionDrivers').checked,
-                revisionBateria: document.getElementById('mt_revisionBateria').checked,
-                revisionCargador: document.getElementById('mt_revisionCargador').checked,
-                revisionPantalla: document.getElementById('mt_revisionPantalla').checked,
-                revisionTeclado: document.getElementById('mt_revisionTeclado').checked,
-            }
-        };
+  function statusLabel(status) {
+    const labels = {
+      vacio: 'Vacío',
+      almacenada: 'Almacenada',
+      enuso: 'En uso',
+      excepcion: 'Excepción',
+      staff: 'Staff'
+    };
+    return labels[status] || status;
+  }
 
-        // Auto-set entregadoPor
-        if (user && fields.status === 'enuso') {
-            fields.entregadoPor = user.fullName;
-        }
+  function esc(val) { return (val || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function dis() { return editMode ? '' : 'disabled'; }
 
-        DataStore.updateSlot(currentSlot.shelf, currentSlot.index, fields);
-        close();
-        Cart.render();
-        Summary.update();
-    }
+  function init() {
+    document.getElementById('modalCloseBtn')?.addEventListener('click', close);
+    document.getElementById('laptopModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'laptopModal') close();
+    });
+  }
 
-    function statusLabel(status) {
-        const labels = {
-            vacio: 'Vacío',
-            almacenada: 'Almacenada',
-            enuso: 'En uso',
-            excepcion: 'Excepción',
-            staff: 'Staff'
-        };
-        return labels[status] || status;
-    }
-
-    function esc(val) { return (val || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
-    function dis() { return editMode ? '' : 'disabled'; }
-
-    function init() {
-        document.getElementById('modalCloseBtn')?.addEventListener('click', close);
-        document.getElementById('laptopModal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'laptopModal') close();
-        });
-    }
-
-    return { init, open, close };
+  return { init, open, close };
 })();

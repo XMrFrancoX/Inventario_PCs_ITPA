@@ -1,14 +1,10 @@
 /**
  * supabase-client.js — Inicialización del cliente Supabase
- *
- * INSTRUCCIONES:
- * 1. Ir a tu proyecto en https://supabase.com
- * 2. Settings → API
- * 3. Copiar "Project URL" y "anon public" key
- * 4. Pegarlos abajo
  */
 
-const SUPABASE_URL = 'TU_SUPABASE_URL_AQUI';
-const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY_AQUI';
+const SUPABASE_URL = 'https://jdmsecfdhbnzzycdwxvc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkbXNlY2ZkaGJuenp5Y2R3eHZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzgzNDcsImV4cCI6MjA4ODI1NDM0N30.vdDYJG-qFKbBdb0A2yOl8vxKbo9wzltuB2ibj8eYLJ8';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Use a different variable name to avoid collision with window.supabase (the library)
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+console.log('[Supabase] Client initialized:', !!db);
