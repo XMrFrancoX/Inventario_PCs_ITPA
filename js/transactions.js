@@ -140,7 +140,11 @@ const Transactions = (() => {
             tipo: tipo,
             equipos: laptopIds.join(', '),
             responsable: solicitante || '',
-            operador: user ? user.fullName : ''
+            operador: user ? user.fullName : '',
+            curso: curso || '',
+            destino: destino || '',
+            retirante: retirante || '',
+            observaciones: observaciones || ''
         });
 
         closeModal();
@@ -154,9 +158,27 @@ const Transactions = (() => {
         const container = document.getElementById('txnHistoryBody');
         if (!container) return;
 
-        const transactions = await DataStore.getTransactions();
+        // Show loading state
+        container.innerHTML = `
+            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:40px; font-size:.88rem;">
+                Cargando movimientos...
+            </td></tr>
+        `;
 
-        if (transactions.length === 0) {
+        let transactions;
+        try {
+            transactions = await DataStore.getTransactions();
+        } catch (err) {
+            console.error('renderHistory error:', err);
+            container.innerHTML = `
+                <tr><td colspan="5" style="text-align:center; color:var(--status-red); padding:40px; font-size:.88rem;">
+                    Error al cargar el historial. Verifique la conexión.
+                </td></tr>
+            `;
+            return;
+        }
+
+        if (!transactions || transactions.length === 0) {
             container.innerHTML = `
                 <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:40px; font-size:.88rem;">
                     No hay movimientos registrados aún.
@@ -164,6 +186,9 @@ const Transactions = (() => {
             `;
             return;
         }
+
+        const user = Auth.getUser();
+        const isAdmin = user && DataStore.hasPermission(user, 'admin');
 
         container.innerHTML = transactions.map(txn => {
             const date = new Date(txn.fecha);
@@ -179,6 +204,23 @@ const Transactions = (() => {
                 `<span class="status-badge status-badge--${badgeClass}" style="font-size:.6rem;">${id}</span>`
             ).join(' ');
 
+            // Build detail lines
+            let detailHtml = '';
+            if (txn.responsable) detailHtml += `<div style="font-size:.82rem;"><strong>Solicita:</strong> ${esc(txn.responsable)}</div>`;
+            if (txn.retirante) detailHtml += `<div style="font-size:.78rem; color:var(--text-secondary);"><strong>Retira:</strong> ${esc(txn.retirante)}</div>`;
+            if (txn.curso) detailHtml += `<div style="font-size:.78rem; color:var(--text-secondary);"><strong>Curso:</strong> ${esc(txn.curso)}</div>`;
+            if (txn.destino) detailHtml += `<div style="font-size:.78rem; color:var(--text-secondary);"><strong>Destino:</strong> ${esc(txn.destino)}</div>`;
+            if (txn.observaciones) detailHtml += `<div style="font-size:.75rem; color:var(--text-muted); font-style:italic; margin-top:2px;">${esc(txn.observaciones)}</div>`;
+
+            const deleteBtn = isAdmin ? `
+                <button class="btn btn--danger btn--sm txn-delete-btn" data-txn-id="${txn.id}" 
+                    style="padding:4px 8px; font-size:.7rem; margin-left:8px;" title="Eliminar registro">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            ` : '';
+
             return `
                 <tr class="users-table__row">
                     <td class="users-table__cell" style="white-space:nowrap;">
@@ -192,14 +234,33 @@ const Transactions = (() => {
                         <div style="display:flex; flex-wrap:wrap; gap:4px;">${ids}</div>
                     </td>
                     <td class="users-table__cell">
-                        ${txn.responsable ? `<div style="font-size:.82rem;"><strong>Solicita:</strong> ${esc(txn.responsable)}</div>` : ''}
+                        ${detailHtml || '<span style="color:var(--text-muted);">—</span>'}
                     </td>
                     <td class="users-table__cell" style="font-size:.78rem; color:var(--text-secondary);">
-                        ${txn.operador ? esc(txn.operador) : '—'}
+                        ${txn.operador ? esc(txn.operador) : '—'}${deleteBtn}
                     </td>
                 </tr>
             `;
         }).join('');
+
+        // Attach delete handlers
+        container.querySelectorAll('.txn-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const txnId = btn.dataset.txnId;
+                if (!confirm('¿Eliminar este registro del historial?')) return;
+                btn.disabled = true;
+                btn.textContent = '...';
+                const ok = await DataStore.deleteTransaction(txnId);
+                if (ok) {
+                    await renderHistory();
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '✕';
+                    alert('Error al eliminar el registro.');
+                }
+            });
+        });
     }
 
     function esc(val) { return (val || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }

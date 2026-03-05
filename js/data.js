@@ -290,9 +290,13 @@ const DataStore = (() => {
     async function addTransaction(txn) {
         const { error } = await db.from('transactions').insert({
             tipo: txn.tipo,
-            equipos: txn.equipos,
+            equipos: txn.equipos || '',
             responsable: txn.responsable || '',
             operador: txn.operador || '',
+            curso: txn.curso || '',
+            destino: txn.destino || '',
+            retirante: txn.retirante || '',
+            observaciones: txn.observaciones || '',
             created_at: new Date().toISOString()
         });
         if (error) console.error('addTransaction error:', error);
@@ -306,12 +310,24 @@ const DataStore = (() => {
             .order('created_at', { ascending: false });
         if (error) { console.error('getTransactions error:', error); return []; }
         return data.map(t => ({
+            id: t.id,
             tipo: t.tipo,
             equipos: t.equipos,
             responsable: t.responsable,
             operador: t.operador,
+            curso: t.curso || '',
+            destino: t.destino || '',
+            retirante: t.retirante || '',
+            observaciones: t.observaciones || '',
             fecha: t.created_at
         }));
+    }
+
+    /** Eliminar una transacción */
+    async function deleteTransaction(id) {
+        const { error } = await db.from('transactions').delete().eq('id', id);
+        if (error) { console.error('deleteTransaction error:', error); return false; }
+        return true;
     }
 
     /* =================== GESTIÓN DE CARROS =================== */
@@ -471,7 +487,7 @@ const DataStore = (() => {
         authenticate, assignRange, save,
         registerUser, updateUserRole, updateUser, deleteUser,
         getUsers, hasPermission, ROLES,
-        addTransaction, getTransactions,
+        addTransaction, getTransactions, deleteTransaction,
         getCarts, getActiveCart, setActiveCart, createCart, deleteCart, getShelfLabel
     };
 })();

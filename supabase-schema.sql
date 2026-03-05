@@ -94,6 +94,10 @@ CREATE TABLE transactions (
     equipos TEXT DEFAULT '',
     responsable TEXT DEFAULT '',
     operador TEXT DEFAULT '',
+    curso TEXT DEFAULT '',
+    destino TEXT DEFAULT '',
+    retirante TEXT DEFAULT '',
+    observaciones TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -123,6 +127,8 @@ CREATE POLICY "Allow public delete" ON slots FOR DELETE USING (true);
 
 CREATE POLICY "Allow public read" ON transactions FOR SELECT USING (true);
 CREATE POLICY "Allow public insert" ON transactions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update" ON transactions FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete" ON transactions FOR DELETE USING (true);
 
 -- 10. Función para verificar contraseñas
 CREATE OR REPLACE FUNCTION verify_password(p_username TEXT, p_password TEXT)

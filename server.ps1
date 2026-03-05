@@ -13,7 +13,7 @@ $mimeTypes = @{
     ".ico"  = "image/x-icon"
 }
 
-$root = "c:\Users\nakillian\Desktop\Inventario_PCs_ITPA"
+$root = "c:\Users\frortiz\Documents\Inventario_PCs_ITPA"
 
 while ($listener.IsListening) {
     $context = $listener.GetContext()
