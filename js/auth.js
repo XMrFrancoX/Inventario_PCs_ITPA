@@ -3,17 +3,13 @@
  */
 const Auth = (() => {
     let currentUser = null;
-<<<<<<< HEAD
-=======
     let pendingInviteToken = null;
     let pendingInviteRole = null;
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 
     function init() {
         const saved = sessionStorage.getItem('itpa_session');
         if (saved) {
             currentUser = JSON.parse(saved);
-            // Re-verificar que el usuario siga existiendo en storage
             const fresh = DataStore.authenticate(currentUser.username, currentUser.password);
             if (fresh) {
                 currentUser = fresh;
@@ -23,54 +19,44 @@ const Auth = (() => {
                 currentUser = null;
             }
         }
-<<<<<<< HEAD
-=======
 
         // Detectar token de invitación en la URL
         const params = new URLSearchParams(window.location.search);
         const inviteToken = params.get('invite');
         if (inviteToken && !currentUser) {
-            // Verificar que el token sea válido
             const invites = DataStore.getInvites();
             const invite = invites.find(i => i.token === inviteToken && !i.used);
             if (invite) {
                 pendingInviteToken = inviteToken;
                 pendingInviteRole = invite.role;
-                // Auto-mostrar formulario de registro
                 setTimeout(() => {
                     document.getElementById('loginCard').style.display = 'none';
                     document.getElementById('registerCard').style.display = '';
-                    // Mostrar el rol que se va a asignar
                     const roleLabel = DataStore.ROLES[invite.role]?.label || invite.role;
-                    const infoEl = document.getElementById('inviteRoleInfo');
+                    const infoEl = document.getElementById('registerInviteInfo');
                     if (infoEl) {
                         infoEl.textContent = `🎟️ Invitación válida — Se le asignará el rol: ${roleLabel}`;
                         infoEl.style.display = '';
                     }
                 }, 100);
             }
-            // Limpiar la URL sin recargar
             window.history.replaceState({}, '', window.location.pathname);
         }
 
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         setupListeners();
     }
 
     function setupListeners() {
-        // Login form
         document.getElementById('loginForm')?.addEventListener('submit', e => {
             e.preventDefault();
             handleLogin();
         });
 
-        // Register form
         document.getElementById('registerForm')?.addEventListener('submit', e => {
             e.preventDefault();
             handleRegister();
         });
 
-        // Toggle between login / register views
         document.getElementById('showRegisterBtn')?.addEventListener('click', () => {
             document.getElementById('loginCard').style.display = 'none';
             document.getElementById('registerCard').style.display = '';
@@ -81,7 +67,6 @@ const Auth = (() => {
             document.getElementById('loginCard').style.display = '';
         });
 
-        // Logout
         document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
     }
 
@@ -127,11 +112,6 @@ const Auth = (() => {
             return;
         }
 
-<<<<<<< HEAD
-        const result = DataStore.registerUser(username, password, fullName);
-        if (result.success) {
-            successEl.textContent = '✅ Cuenta creada exitosamente. Su rol es "Solo Lectura". Un administrador puede asignarle más permisos.';
-=======
         // Si hay invitación pendiente, canjearla
         let assignedRole = null;
         if (pendingInviteToken) {
@@ -140,7 +120,7 @@ const Auth = (() => {
                 errorEl.textContent = 'La invitación ya fue usada o es inválida.';
                 pendingInviteToken = null;
                 pendingInviteRole = null;
-                const infoEl = document.getElementById('inviteRoleInfo');
+                const infoEl = document.getElementById('registerInviteInfo');
                 if (infoEl) infoEl.style.display = 'none';
                 return;
             }
@@ -150,21 +130,15 @@ const Auth = (() => {
         if (result.success) {
             const roleLabel = DataStore.ROLES[result.user.role]?.label || result.user.role;
             successEl.textContent = `✅ Cuenta creada exitosamente. Su rol es "${roleLabel}".${!assignedRole ? ' Un administrador puede asignarle más permisos.' : ''}`;
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
-            // Clear fields
             document.getElementById('regUser').value = '';
             document.getElementById('regPass').value = '';
             document.getElementById('regPassConfirm').value = '';
             document.getElementById('regFullName').value = '';
-<<<<<<< HEAD
-=======
             pendingInviteToken = null;
             pendingInviteRole = null;
-            const infoEl = document.getElementById('inviteRoleInfo');
+            const infoEl = document.getElementById('registerInviteInfo');
             if (infoEl) infoEl.style.display = 'none';
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 
-            // Auto-switch to login after 3s
             setTimeout(() => {
                 document.getElementById('registerCard').style.display = 'none';
                 document.getElementById('loginCard').style.display = '';
@@ -176,15 +150,12 @@ const Auth = (() => {
     }
 
     function onLoginSuccess() {
-        // Hide login, show app content
         document.getElementById('loginSection').classList.remove('active');
         document.getElementById('cartSection').classList.add('active');
 
-        // Show header menu button
         const menuBtn = document.getElementById('menuBtn');
         if (menuBtn) menuBtn.style.display = '';
 
-        // Update user badge with role
         const badge = document.getElementById('userBadge');
         const nameSpan = document.getElementById('userName');
         if (badge && nameSpan) {
@@ -193,7 +164,6 @@ const Auth = (() => {
             badge.classList.remove('hidden');
         }
 
-        // Show sidebar nav items based on permissions
         document.querySelectorAll('.sidebar__nav-item[data-requires-auth]').forEach(el => {
             const requiredRole = el.dataset.minRole || 'viewer';
             if (DataStore.hasPermission(currentUser, requiredRole)) {
@@ -203,65 +173,42 @@ const Auth = (() => {
             }
         });
 
-        // Show/hide action buttons based on role
         applyPermissions();
-
-        // Show logout button
         document.getElementById('logoutBtn').style.display = '';
-
-        // Set active nav
         document.querySelector('.sidebar__nav-item[data-section="cartSection"]')?.classList.add('active');
 
-        // Initialize all modules
         Cart.render();
         Summary.update();
-<<<<<<< HEAD
-=======
         CartManager.updateCartSelector();
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
     }
 
-    /** Oculta/muestra elementos de la UI según el rol del usuario */
     function applyPermissions() {
-        const isAdmin = currentUser.role === 'admin';
-        const isEditor = currentUser.role === 'editor' || isAdmin;
-
-        // Action buttons that require editor or higher
         document.querySelectorAll('[data-min-role]').forEach(el => {
             const req = el.dataset.minRole;
             el.style.display = DataStore.hasPermission(currentUser, req) ? '' : 'none';
         });
-
-        // Edit mode in modals — the switch is hidden for viewers
-        // This is handled dynamically in modal.js when rendering
     }
 
     function handleLogout() {
         currentUser = null;
         sessionStorage.removeItem('itpa_session');
 
-        // Reset UI
         document.getElementById('userBadge').classList.add('hidden');
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('loginSection').classList.add('active');
         document.querySelectorAll('.sidebar__nav-item').forEach(n => n.classList.remove('active'));
 
-        // Hide auth-required nav
         document.querySelectorAll('.sidebar__nav-item[data-requires-auth]').forEach(el => {
             el.style.display = 'none';
         });
 
         document.getElementById('logoutBtn').style.display = 'none';
-
-        // Hide header menu button
         const menuBtn = document.getElementById('menuBtn');
         if (menuBtn) menuBtn.style.display = 'none';
 
-        // Make sure login card is visible (not register)
         document.getElementById('loginCard').style.display = '';
         document.getElementById('registerCard').style.display = 'none';
 
-        // Close sidebar
         App.closeSidebar();
     }
 
@@ -270,7 +217,6 @@ const Auth = (() => {
     function isAdmin() { return currentUser?.role === 'admin'; }
     function canEdit() { return DataStore.hasPermission(currentUser, 'editor'); }
 
-    /** Refresca el usuario actual desde storage (después de editar su propio perfil) */
     function refreshSession() {
         if (!currentUser) return;
         const users = DataStore.getUsers();

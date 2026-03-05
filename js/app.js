@@ -11,15 +11,11 @@ const App = (() => {
         Bulk.init();
         UserManager.init();
         Transactions.init();
-<<<<<<< HEAD
-=======
         CartManager.init();
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
         setupSidebar();
         setupNavigation();
         registerSW();
 
-        // Check auth to show/hide menu button initially
         const menuBtn = document.getElementById('menuBtn');
         if (menuBtn) {
             menuBtn.style.display = Auth.isLoggedIn() ? '' : 'none';
@@ -57,38 +53,26 @@ const App = (() => {
 
                 if (!Auth.isLoggedIn() && btn.hasAttribute('data-requires-auth')) return;
 
-                // Switch active section
                 document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
                 document.getElementById(target)?.classList.add('active');
 
-                // Switch active nav
                 document.querySelectorAll('.sidebar__nav-item').forEach(n => n.classList.remove('active'));
                 btn.classList.add('active');
 
                 closeSidebar();
 
-                // Refresh data when switching to views
-<<<<<<< HEAD
-                if (target === 'cartSection') Cart.render();
-                if (target === 'summarySection') Summary.update();
-                if (target === 'usersSection') UserManager.render();
-                if (target === 'historySection') Transactions.renderHistory();
-=======
                 if (target === 'cartSection') { Cart.render(); CartManager.updateCartSelector(); }
                 if (target === 'summarySection') Summary.update();
                 if (target === 'usersSection') { UserManager.render(); UserManager.renderInvites(); }
                 if (target === 'historySection') Transactions.renderHistory();
                 if (target === 'cartsSection') CartManager.render();
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
             });
         });
 
-        // Selection mode toggle
         document.getElementById('selectionModeBtn')?.addEventListener('click', () => {
             Cart.toggleSelectionMode();
         });
 
-        // Return all laptops button
         document.getElementById('returnAllBtn')?.addEventListener('click', handleReturnAll);
     }
 
@@ -114,7 +98,6 @@ const App = (() => {
         if (updates.length > 0) {
             DataStore.bulkUpdate(updates);
 
-            // Log as a transaction
             const laptopIds = slotsInUse.map(s => s.laptopId).filter(Boolean);
             DataStore.addTransaction({
                 laptopIds,
@@ -133,13 +116,10 @@ const App = (() => {
     /* ---------- Service Worker ---------- */
     function registerSW() {
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(() => {
-                // Silently fail in dev
-            });
+            navigator.serviceWorker.register('/sw.js').catch(() => { });
         }
     }
 
-    /* ---------- Public API ---------- */
     return { init, closeSidebar, toggleSidebar };
 })();
 

@@ -1,5 +1,5 @@
 /**
- * users.js — Panel de administración de usuarios (solo admins)
+ * users.js — Panel de administración de usuarios e invitaciones (solo admins)
  */
 const UserManager = (() => {
 
@@ -74,7 +74,7 @@ const UserManager = (() => {
                 const result = DataStore.updateUserRole(username, newRole, Auth.getUser());
                 if (!result.success) {
                     alert(result.error);
-                    render(); // revert
+                    render();
                 }
             });
         });
@@ -118,7 +118,6 @@ const UserManager = (() => {
             successEl.textContent = '✅ Usuario actualizado correctamente.';
             Auth.refreshSession();
             render();
-            // Update header badge if editing self
             const current = Auth.getUser();
             if (current) {
                 const nameSpan = document.getElementById('userName');
@@ -149,11 +148,6 @@ const UserManager = (() => {
         }
     }
 
-<<<<<<< HEAD
-    function esc(val) { return (val || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
-
-    return { init, render, editUser, saveUserEdit, closeEditModal, deleteUser };
-=======
     /* =================== INVITACIONES =================== */
 
     /** Renderizar la tabla de invitaciones activas */
@@ -219,7 +213,6 @@ const UserManager = (() => {
 
         const result = DataStore.createInvite(role, Auth.getUser());
         if (result.success) {
-            const link = `${window.location.origin}${window.location.pathname}?invite=${result.invite.token}`;
             msgEl.textContent = '✅ Invitación creada. Copie el link de la tabla.';
             msgEl.style.color = 'var(--status-green)';
             renderInvites();
@@ -251,7 +244,6 @@ const UserManager = (() => {
                 setTimeout(() => { msgEl.textContent = ''; }, 2000);
             }
         }).catch(() => {
-            // Fallback
             prompt('Copie este link:', link);
         });
     }
@@ -259,5 +251,4 @@ const UserManager = (() => {
     function esc(val) { return (val || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
     return { init, render, renderInvites, editUser, saveUserEdit, closeEditModal, deleteUser, handleGenerateInvite, handleDeleteInvite, copyInviteLink };
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
 })();

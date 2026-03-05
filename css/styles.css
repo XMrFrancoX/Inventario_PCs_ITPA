@@ -1315,36 +1315,266 @@ textarea.form-input {
   background: var(--accent);
   color: white;
   padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 700;
-  font-size: .82rem;
-}
 
-.mass-delivery-bar__actions {
-  display: flex;
-  gap: 10px;
-<<<<<<< HEAD
-=======
-}
+  /* Desktop */
+  @media (min-width: 1024px) {
+    .sidebar.open~.main {
+      margin-left: var(--sidebar-width);
+    }
 
-/* =================== INVITE LINK =================== */
-.invite-link-cell {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+    .sidebar__overlay {
+      display: none;
+    }
 
-.invite-link-cell .invite-link-input {
-  flex: 1;
-  min-width: 0;
-  font-family: 'JetBrains Mono', monospace;
-  cursor: text;
-}
-
-/* =================== FORM ROW 3-COL =================== */
-@media (min-width: 768px) {
-  .form-row:has(> :nth-child(3)) {
-    grid-template-columns: 1fr 1fr 1fr;
+    .main {
+      transition: margin-left var(--transition);
+    }
   }
->>>>>>> 08b288a (feat: implement initial ITPA PC inventory management application with data storage, user authentication, and multi-cart support.)
+
+  /* Mobile tweaks */
+  @media (max-width: 767px) {
+    .cart-shelf__grid {
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+    }
+
+    .slot__label {
+      font-size: .45rem;
+    }
+
+    .slot__number {
+      display: none;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .bulk-form-row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .header__title {
+      font-size: .9rem;
+    }
+
+    .modal {
+      max-height: 95vh;
+      border-radius: var(--radius-sm);
+    }
+
+    .mass-delivery-bar {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  /* =================== ANIMATION KEYFRAMES =================== */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: .6;
+    }
+  }
+
+  .animate-in {
+    animation: fadeInUp .4s ease forwards;
+  }
+
+  /* Status badge inline */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .status-badge--almacenada {
+    background: var(--status-green-bg);
+    color: var(--status-green);
+  }
+
+  .status-badge--enuso {
+    background: var(--status-red-bg);
+    color: var(--status-red);
+  }
+
+  .status-badge--excepcion {
+    background: var(--status-yellow-bg);
+    color: var(--status-yellow);
+  }
+
+  .status-badge--staff {
+    background: var(--status-blue-bg);
+    color: var(--status-blue);
+  }
+
+  .status-badge--vacio {
+    background: var(--status-gray-bg);
+    color: var(--status-gray);
+  }
+
+  /* Page section title */
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -.02em;
+  }
+
+  .page-subtitle {
+    font-size: .9rem;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+
+  /* =================== USERS MANAGEMENT =================== */
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .users-table__cell {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
+
+  .users-table__row:last-child .users-table__cell {
+    border-bottom: none;
+  }
+
+  .users-table__row:hover .users-table__cell {
+    background: rgba(255, 255, 255, .02);
+  }
+
+  /* =================== MASS DELIVERY BAR =================== */
+  .mass-delivery-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15, 23, 42, .95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--accent);
+    padding: 14px 24px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    z-index: 150;
+    transform: translateY(100%);
+    transition: transform .3s ease;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, .3);
+  }
+
+  .mass-delivery-bar.visible {
+    display: flex;
+    transform: translateY(0);
+  }
+
+  .mass-delivery-bar__info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: .88rem;
+    font-weight: 500;
+  }
+
+  .mass-delivery-bar__count {
+    background: var(--accent);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: .82rem;
+  }
+
+  .mass-delivery-bar__actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  /* =================== INVITE LINK =================== */
+  .invite-link-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .invite-link-cell .invite-link-input {
+    flex: 1;
+    min-width: 0;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: text;
+  }
+
+  /* =================== INVITE INFO BANNER =================== */
+  .invite-info-banner {
+    background: var(--accent-glow);
+    border: 1px solid rgba(99, 102, 241, .3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: .85rem;
+    color: var(--accent-hover);
+    margin-bottom: 20px;
+    text-align: left;
+  }
+
+  /* =================== CART SELECTOR =================== */
+  .cart-selector-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+  }
+
+  .cart-selector-wrapper label {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .cart-selector-wrapper select {
+    flex: 1;
+    max-width: 280px;
+  }
+
+  /* =================== FORM ROW 3-COL =================== */
+  @media (min-width: 768px) {
+    .form-row:has(> :nth-child(3)) {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+  }
 }

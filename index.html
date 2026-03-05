@@ -85,6 +85,16 @@
         </svg>
         Gestión de Usuarios
       </button>
+
+      <button class="sidebar__nav-item" data-section="cartsSection" data-requires-auth data-min-role="admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="3" width="15" height="13" rx="2" />
+          <path d="M16 8h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1" />
+          <circle cx="5.5" cy="18.5" r="2.5" />
+          <circle cx="17.5" cy="18.5" r="2.5" />
+        </svg>
+        Gestión de Carros
+      </button>
     </div>
 
     <div class="sidebar__footer">
@@ -242,7 +252,12 @@
       </div>
 
       <!-- Cart selector -->
-      <div id="cartSelectorContainer"></div>
+      <div id="cartSelectorContainer">
+        <div class="cart-selector-wrapper" id="cartSelectorWrapper" style="display:none;">
+          <label>🚐 Carro Activo:</label>
+          <select class="form-select" id="cartSelector"></select>
+        </div>
+      </div>
 
       <!-- Cart visualization -->
       <div class="cart-section__title">
@@ -435,9 +450,109 @@
         <p style="font-size:.85rem; color:var(--text-secondary); margin-top:8px; line-height:1.5;">
           Genere un link para invitar a alguien a crear una cuenta con un rol pre-asignado.
         </p>
-        <div id="invitationsContainer" style="margin-top:16px;">
-          <!-- Rendered by users.js -->
+
+        <!-- Generar invitación -->
+        <div style="display:flex; gap:10px; align-items:end; margin-top:16px; flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+            <label class="form-label">Rol de la invitación</label>
+            <select class="form-select" id="inviteRoleSelect">
+              <option value="viewer">Solo Lectura</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <button class="btn btn--primary btn--sm" onclick="UserManager.handleGenerateInvite()"
+            style="height:42px;">Generar Link</button>
         </div>
+        <div id="inviteMsg" style="font-size:.82rem; min-height:20px; margin-top:8px;"></div>
+
+        <!-- Tabla de invitaciones activas -->
+        <div style="overflow-x: auto; margin-top: 16px;">
+          <table class="users-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr
+                style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: .75rem; text-transform: uppercase;">
+                <th style="padding: 10px 14px; font-weight: 600;">Rol</th>
+                <th style="padding: 10px 14px; font-weight: 600;">Link</th>
+                <th style="padding: 10px 14px; font-weight: 600;">Fecha</th>
+                <th style="padding: 10px 14px; font-weight: 600;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="invitesTableBody">
+              <!-- Rendered by users.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CARTS MANAGEMENT SECTION ===== -->
+    <section class="section" id="cartsSection" data-min-role="admin">
+      <h1 class="page-title">Gestión de Carros</h1>
+      <p class="page-subtitle">Administre los carros de laptops del sistema. Cree nuevos carros o elimine existentes.
+      </p>
+
+      <!-- Carros existentes -->
+      <div class="bulk-card">
+        <div class="bulk-card__title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13" rx="2" />
+            <path d="M16 8h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="17.5" cy="18.5" r="2.5" />
+          </svg>
+          Carros Registrados
+        </div>
+
+        <div style="overflow-x: auto; margin-top: 16px;">
+          <table class="users-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr
+                style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: .75rem; text-transform: uppercase;">
+                <th style="padding: 10px 14px; font-weight: 600;">Nombre</th>
+                <th style="padding: 10px 14px; font-weight: 600;">Configuración</th>
+                <th style="padding: 10px 14px; font-weight: 600;">Fecha</th>
+                <th style="padding: 10px 14px; font-weight: 600;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cartsTableBody">
+              <!-- Rendered by carts.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Crear nuevo carro -->
+      <div class="bulk-card">
+        <div class="bulk-card__title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+          Crear Nuevo Carro
+        </div>
+
+        <form id="createCartForm" style="margin-top: 16px;">
+          <div class="form-row" style="margin-bottom: 16px;">
+            <div class="form-group">
+              <label class="form-label">Nombre del Carro</label>
+              <input class="form-input" id="newCartName" type="text" placeholder="Ej: Carro Laboratorio 2" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Estantes</label>
+              <input class="form-input" id="newCartShelves" type="number" value="2" min="1" max="6">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ranuras por Estante</label>
+              <input class="form-input" id="newCartSlots" type="number" value="20" min="1" max="40">
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn--primary" type="submit">Crear Carro</button>
+            <span id="createCartMsg" style="font-size:.82rem; min-height:20px;"></span>
+          </div>
+        </form>
       </div>
     </section>
 
@@ -690,6 +805,7 @@
   <script src="js/summary.js"></script>
   <script src="js/modal.js"></script>
   <script src="js/cart.js"></script>
+  <script src="js/carts.js"></script>
   <script src="js/users.js"></script>
   <script src="js/transactions.js"></script>
   <script src="js/auth.js"></script>
