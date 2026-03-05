@@ -62,6 +62,11 @@ const Auth = (() => {
 
         const user = await DataStore.authenticate(username, password);
         if (user) {
+            if (user.role === 'pending') {
+                errorEl.textContent = 'Su cuenta está pendiente de aprobación. Un administrador debe autorizar su ingreso y asignarle un rol.';
+                document.getElementById('loginPass').value = '';
+                return;
+            }
             currentUser = { ...user, _pw: password };
             sessionStorage.setItem('itpa_session', JSON.stringify(currentUser));
             errorEl.textContent = '';
@@ -97,7 +102,7 @@ const Auth = (() => {
         const result = await DataStore.registerUser(username, password, fullName);
         if (result.success) {
             const roleLabel = DataStore.ROLES[result.user.role]?.label || result.user.role;
-            successEl.textContent = `Cuenta creada exitosamente. Su rol es "${roleLabel}". Un administrador puede asignarle más permisos.`;
+            successEl.textContent = `Cuenta creada exitosamente. Su cuenta está pendiente de aprobación. Un administrador debe autorizar su ingreso antes de que pueda acceder al sistema.`;
             errorEl.textContent = '';
             document.getElementById('regUser').value = '';
             document.getElementById('regPass').value = '';

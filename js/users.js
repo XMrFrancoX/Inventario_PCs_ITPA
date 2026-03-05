@@ -4,7 +4,10 @@
 const UserManager = (() => {
 
     function init() {
-        // No setup needed
+        document.getElementById('editUserModalClose')?.addEventListener('click', closeEditModal);
+        document.getElementById('editUserModal')?.addEventListener('click', e => {
+            if (e.target.id === 'editUserModal') closeEditModal();
+        });
     }
 
     /** Renderizar la tabla de usuarios en la sección de gestión */
@@ -22,6 +25,7 @@ const UserManager = (() => {
 
             const isSelf = current.username === user.username;
             const masterBadge = user.isMaster ? '<span class="status-badge status-badge--staff" style="font-size:.65rem;">MAESTRA</span>' : '';
+            const pendingBadge = user.role === 'pending' ? '<span class="status-badge status-badge--excepcion" style="font-size:.65rem;">PENDIENTE</span>' : '';
 
             return `
                 <tr class="users-table__row">
@@ -29,6 +33,7 @@ const UserManager = (() => {
                         <div style="display:flex;align-items:center;gap:8px;">
                             <strong>${esc(user.fullName)}</strong>
                             ${masterBadge}
+                            ${pendingBadge}
                             ${isSelf ? '<span class="status-badge status-badge--almacenada" style="font-size:.65rem;">TÚ</span>' : ''}
                         </div>
                         <div style="font-size:.75rem;color:var(--text-muted);margin-top:2px;">@${esc(user.username)}</div>
@@ -81,10 +86,19 @@ const UserManager = (() => {
     }
 
     /** Abrir modal de edición de usuario */
-    function editUser(username) {
-        // We need the user data but the edit modal was removed by the user.
-        // If they add it back, this would work:
-        alert('Modal de edición de usuario no disponible. Fue eliminado del HTML.');
+    async function editUser(username) {
+        const users = await DataStore.getUsers();
+        const user = users.find(u => u.username === username);
+        if (!user) return;
+
+        document.getElementById('editUserOriginal').value = username;
+        document.getElementById('editUserFullName').value = user.fullName || '';
+        document.getElementById('editUserName').value = user.username || '';
+        document.getElementById('editUserPass').value = '';
+        document.getElementById('editUserError').textContent = '';
+        document.getElementById('editUserSuccess').textContent = '';
+
+        document.getElementById('editUserModal').classList.add('visible');
     }
 
     async function saveUserEdit() {
@@ -104,8 +118,16 @@ const UserManager = (() => {
         if (newFullName) fields.fullName = newFullName;
         if (newPass) fields.password = newPass;
 
+        if (Object.keys(fields).length === 0) {
+            errorEl.textContent = 'No hay cambios para guardar.';
+            return;
+        }
+
+        errorEl.textContent = 'Guardando...';
+
         const result = await DataStore.updateUser(original, fields, Auth.getUser());
         if (result.success) {
+            errorEl.textContent = '';
             successEl.textContent = 'Usuario actualizado correctamente.';
             await Auth.refreshSession();
             await render();
@@ -117,6 +139,7 @@ const UserManager = (() => {
                     nameSpan.textContent = `${current.fullName} (${roleLabel})`;
                 }
             }
+            setTimeout(() => closeEditModal(), 1500);
         } else {
             errorEl.textContent = result.error;
         }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inv-itpa-v2';
+const CACHE_NAME = 'inv-itpa-v3';
 const ASSETS = [
   '/',
   '/index.html',

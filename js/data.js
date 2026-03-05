@@ -16,7 +16,8 @@ const DataStore = (() => {
     const ROLES = {
         admin: { label: 'Administrador', level: 3 },
         editor: { label: 'Editor', level: 2 },
-        viewer: { label: 'Solo Lectura', level: 1 }
+        viewer: { label: 'Solo Lectura', level: 1 },
+        pending: { label: 'Pendiente', level: 0 }
     };
 
     /* ---------- Shelf labels ---------- */
@@ -179,7 +180,7 @@ const DataStore = (() => {
 
     /** Registrar nuevo usuario */
     async function registerUser(username, password, fullName, role) {
-        const assignedRole = role || 'viewer';
+        const assignedRole = role || 'pending';
 
         // Verificar si el username ya existe
         const { data: existing } = await db

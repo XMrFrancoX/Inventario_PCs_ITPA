@@ -13,7 +13,7 @@ CREATE TABLE users (
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     full_name TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN ('admin', 'editor', 'viewer')),
+    role TEXT NOT NULL DEFAULT 'pending' CHECK (role IN ('admin', 'editor', 'viewer', 'pending')),
     is_master BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -163,3 +163,9 @@ BEGIN
     WHERE username = p_username;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ===========================================
+-- MIGRACIÓN: Agregar rol 'pending' (ejecutar solo en DBs existentes)
+-- ===========================================
+-- ALTER TABLE users DROP CONSTRAINT users_role_check;
+-- ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'editor', 'viewer', 'pending'));
