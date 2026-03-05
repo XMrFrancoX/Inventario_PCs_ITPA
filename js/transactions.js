@@ -112,6 +112,25 @@ const Transactions = (() => {
             return;
         }
 
+        // Validar estados compatibles con el tipo de movimiento
+        const validationPromises = selected.map(s => DataStore.getSlot(s.shelf, s.index));
+        const currentSlots = (await Promise.all(validationPromises)).filter(Boolean);
+
+        const allowedStatuses = tipo === 'retorno'
+            ? ['enuso', 'staff', 'excepcion']
+            : ['almacenada'];
+
+        const incompatible = currentSlots.filter(s => !allowedStatuses.includes(s.status));
+
+        if (incompatible.length > 0) {
+            const ids = incompatible.map(s => s.laptopId || `R${s.slotIndex}`).join(', ');
+            const expectedLabel = tipo === 'retorno'
+                ? 'en uso / staff / excepción (fuera del carro)'
+                : 'almacenada (presente en el carro)';
+            errorEl.textContent = `No se puede procesar. Las siguientes notebooks no están ${expectedLabel}: ${ids}`;
+            return;
+        }
+
         const movInfo = MOVEMENT_TYPES[tipo];
         const now = new Date();
         const horaStr = now.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' });

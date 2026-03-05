@@ -86,7 +86,7 @@ const Cart = (() => {
                 el.classList.remove('selected');
             } else {
                 const slot = await DataStore.getSlot(shelf, index);
-                if (slot && slot.laptopId) {
+                if (slot && slot.laptopId && slot.status !== 'vacio') {
                     selectedSlots.add(key);
                     el.classList.add('selected');
                 }
