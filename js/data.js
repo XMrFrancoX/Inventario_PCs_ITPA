@@ -346,6 +346,8 @@ const DataStore = (() => {
             shelves: c.shelves,
             slotsPerShelf: c.slots_per_shelf,
             macAddress: c.mac_address || '',
+            description: c.description || '',
+            customId: c.custom_id || '',
             createdAt: c.created_at
         }));
     }
@@ -396,7 +398,7 @@ const DataStore = (() => {
     }
 
     /** Actualizar un carro existente */
-    async function updateCart(cartId, name, macAddress, requestingUser) {
+    async function updateCart(cartId, name, macAddress, description, customId, requestingUser) {
         if (!hasPermission(requestingUser, 'admin')) {
             return { success: false, error: 'No tiene permisos.' };
         }
@@ -406,7 +408,9 @@ const DataStore = (() => {
 
         const updates = {
             name: name.trim(),
-            mac_address: (macAddress || '').trim()
+            mac_address: (macAddress || '').trim(),
+            description: (description || '').trim(),
+            custom_id: (customId || '').trim()
         };
 
         const { error } = await db

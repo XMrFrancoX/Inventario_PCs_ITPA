@@ -44,7 +44,9 @@ const CartManager = (() => {
                             <strong>${esc(cart.name)}</strong>
                             ${isActive ? '<span class="status-badge status-badge--almacenada" style="font-size:.65rem;">ACTIVO</span>' : ''}
                         </div>
-                        ${cart.macAddress ? `<div style="font-size:.75rem; color:var(--text-muted); margin-top:4px; font-family:monospace;">${esc(cart.macAddress)}</div>` : ''}
+                        ${cart.customId ? `<div style="font-size:.75rem; color:var(--text-accent); margin-top:2px; font-weight:600;">ID: ${esc(cart.customId)}</div>` : ''}
+                        ${cart.description ? `<div style="font-size:.75rem; color:var(--text-muted); margin-top:2px;">${esc(cart.description)}</div>` : ''}
+                        ${cart.macAddress ? `<div style="font-size:.75rem; color:var(--text-muted); margin-top:4px; font-family:monospace;">MAC: ${esc(cart.macAddress)}</div>` : ''}
                     </td>
                     <td class="users-table__cell" style="font-size:.82rem;">
                         ${cart.shelves.length} estante(s) × ${cart.slotsPerShelf} ranuras
@@ -161,6 +163,8 @@ const CartManager = (() => {
         document.getElementById('editCartId').value = cart.id;
         document.getElementById('editCartName').value = cart.name;
         document.getElementById('editCartMac').value = cart.macAddress || '';
+        document.getElementById('editCartCustomId').value = cart.customId || '';
+        document.getElementById('editCartDescription').value = cart.description || '';
         document.getElementById('editCartError').textContent = '';
 
         document.getElementById('editCartModal').classList.add('visible');
@@ -177,6 +181,8 @@ const CartManager = (() => {
         const cartId = document.getElementById('editCartId').value;
         const name = document.getElementById('editCartName').value.trim();
         const macAddress = document.getElementById('editCartMac').value.trim();
+        const customId = document.getElementById('editCartCustomId').value.trim();
+        const description = document.getElementById('editCartDescription').value.trim();
         const errorEl = document.getElementById('editCartError');
 
         if (!name) {
@@ -187,7 +193,7 @@ const CartManager = (() => {
         errorEl.textContent = 'Guardando...';
         errorEl.style.color = 'var(--text-muted)';
 
-        const result = await DataStore.updateCart(cartId, name, macAddress, Auth.getUser());
+        const result = await DataStore.updateCart(cartId, name, macAddress, description, customId, Auth.getUser());
         if (result.success) {
             closeEditModal();
             await render();
